@@ -1,0 +1,50 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  CreateDateColumn,
+} from 'typeorm';
+import { User } from '../../users/entities/user.entity';
+import { Event } from '../../events/entities/event.entity';
+import { ConsumeDetails } from '../../consumeDetails/entities/consumeDetail.entity';
+import { PaymentDetails } from '../../payment-details/entities/paymentDetail.entity';
+
+@Entity('Payments')
+export class Payment {
+  @PrimaryGeneratedColumn({ name: 'idPayment' })
+  id: number;
+
+  @ManyToOne(() => User, { eager: true })
+  @JoinColumn({ name: 'idUser ' })
+  user: User;
+
+  @ManyToOne(() => Event, { eager: true })
+  @JoinColumn({ name: 'idEvent' })
+  event: Event;
+
+  @Column('decimal', { precision: 15, scale: 2 })
+  amountUSD: number;
+
+  @Column('decimal', { precision: 15, scale: 2 })
+  amountBS: number;
+
+  @Column({ length: 10 })
+  paymentMethod: 'USD' | 'BS';
+
+  @Column({ length: 50 })
+  status: string; // e.g. 'pending', 'completed', 'cancelled'
+
+  @CreateDateColumn({ name: 'createdAt' })
+  createdAt: Date;
+
+  @OneToMany(() => ConsumeDetails, (consumeDetails) => consumeDetails.payment, {
+    cascade: true,
+  })
+  consumeDetails: ConsumeDetails[];
+
+  @OneToMany(() => PaymentDetails, (paymentDetails) => paymentDetails.payment)
+  paymentDetails: PaymentDetails[];
+}
