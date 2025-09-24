@@ -68,6 +68,42 @@ export class PaymentsService {
       throw new BadRequestException('El monto en BS debe ser mayor que cero');
     }
 
+    // --- Lógica de validación de límite de tickets ---
+    const MAX_TICKETS_PER_USER = 10;
+    let ticketsInCurrentPurchase = 0;
+
+    for (const item of consumeItems) {
+      if (item.detailType === 'ticket') {
+        ticketsInCurrentPurchase += item.quantity;
+      }
+    }
+
+    if (ticketsInCurrentPurchase === 0) {
+      // Si no hay tickets en la compra actual, no necesitamos validar el límite de tickets.
+      // Podría ser una compra solo de comida/bebida.
+      // Opcional: Podrías lanzar un error si esperas que siempre haya al menos un ticket.
+    } else {
+      // Contar los tickets ya comprados por el usuario para este evento
+      const existingTicketsCount = await this.paymentDetailsRepository
+        .createQueryBuilder('paymentDetail')
+        .innerJoin('paymentDetail.payment', 'payment')
+        .where('payment.user = :userId', { userId: idUser })
+        .andWhere('payment.event = :eventId', { eventId: idEvent })
+        .andWhere('paymentDetail.detailType = :detailType', { detailType: 'ticket' })
+        .andWhere('payment.status = :status', { status: 'completed' }) // Solo contar tickets de pagos completados
+        .select('SUM(paymentDetail.quantity)', 'totalTickets')
+        .getRawOne();
+
+      const totalExistingTickets = parseInt(existingTicketsCount?.totalTickets || '0', 10);
+
+      if (totalExistingTickets + ticketsInCurrentPurchase > MAX_TICKETS_PER_USER) {
+        throw new BadRequestException(
+          `No puedes comprar más de ${MAX_TICKETS_PER_USER} entradas para este evento. Ya tienes ${totalExistingTickets} entradas y estás intentando comprar ${ticketsInCurrentPurchase} más.`
+        );
+      }
+    }
+    // --- Fin de la lógica de validación de límite de tickets ---
+
     // Transacción para crear Payment y PaymentDetails
     return this.dataSource.transaction(async (manager) => {
       const payment = manager.create(Payment, {

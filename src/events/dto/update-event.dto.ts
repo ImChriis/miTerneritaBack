@@ -21,6 +21,10 @@ export class UpdateEventDto {
   readonly date?: string;
 
   @IsOptional()
+  @IsDateString()
+  readonly time?: string;
+
+  @IsOptional()
   @IsString()
   readonly room?: string;
 

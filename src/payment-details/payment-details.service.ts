@@ -79,9 +79,7 @@ export class PaymentDetailsService {
       consumeDetails = await this.consumeDetailsRepository.findOne({
         where: { id: idConsumeDetails },
       });
-      if (!consumeDetails) {
-        throw new NotFoundException('Detalle de consumo no encontrado');
-      }
+      // Si no existe, simplemente se deja como null (opcional)
     }
 
     // Verificar si ya existe PaymentDetails para este payment y ticket

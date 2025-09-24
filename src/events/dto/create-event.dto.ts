@@ -21,6 +21,9 @@ export class CreateEventDto {
   @IsDateString()
   readonly date: string;
 
+  @IsDateString()
+  readonly time: string;
+
   @IsString()
   @IsOptional()
   readonly room?: string;

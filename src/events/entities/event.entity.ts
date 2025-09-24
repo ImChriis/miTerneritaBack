@@ -11,8 +11,11 @@ export class Event {
   @Column('text', { nullable: true })
   description: string;
 
-  @Column('datetime')
+  @Column('date')
   date: Date;
+
+  @Column('time')
+  time: string;
 
   @Column({ length: 100, nullable: true })
   room: string;
