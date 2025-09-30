@@ -17,11 +17,11 @@ export class Payment {
   @PrimaryGeneratedColumn({ name: 'idPayment' })
   id: number;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'idUser ' })
   user: User;
 
-  @ManyToOne(() => Event, { eager: true })
+  @ManyToOne(() => Event, { eager: false })
   @JoinColumn({ name: 'idEvent' })
   event: Event;
 

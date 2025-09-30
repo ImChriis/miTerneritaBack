@@ -21,6 +21,16 @@ class ConsumeItemDto {
   @IsNumber()
   @Min(0)
   price: number;
+
+  // IDs for each type
+  @IsInt()
+  idTicket?: number;
+
+  @IsInt()
+  idFood?: number;
+
+  @IsInt()
+  idDrink?: number;
 }
 
 export class CreatePaymentDto {

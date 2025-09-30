@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
+import { RolesService } from '../roles/roles.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -14,6 +15,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly rolesService: RolesService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -50,19 +52,24 @@ export class AuthService {
     }
 
     // Validar cédula duplicada
-    const existingUserByCedula = await this.usersService['usersRepository'].findOne({ where: { cedula: registerUserDto.cedula } });
+    const existingUserByCedula = await this.usersService.findByCedula(registerUserDto.cedula);
     if (existingUserByCedula) {
       throw new BadRequestException('La cédula ya está registrada. Por favor, verifica los datos ingresados.');
     }
 
     try {
       const hashedPassword = await bcrypt.hash(registerUserDto.password, 10);
+      // Buscar rol 'user' por nombre
+      const userRole = await this.rolesService.findByName('user');
+      if (!userRole) {
+        throw new BadRequestException('Rol "user" no encontrado.');
+      }
       const user = await this.usersService.create({
         ...registerUserDto,
         password: hashedPassword,
-        roleName: 'user', // asigna rol 'user' por defecto
+        roleName: 'user',
         status: 1,
-        idRol: 1, // Asegura que el idRol sea 1 para 'user'
+        idRol: userRole.id,
       });
       return user;
     } catch (error) {

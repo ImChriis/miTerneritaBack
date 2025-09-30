@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('PaymentMethods')
 export class PaymentMethod {
-  @PrimaryGeneratedColumn({ name: 'idPaymentMethod' })
+  @PrimaryGeneratedColumn({ name: 'idMethod' })
   id: number;
 
   @Column({ length: 100, unique: true })

@@ -15,20 +15,31 @@ import { CodeModule } from './code/code.module';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule } from '@nestjs/config';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { join } from 'path';
+import { MailService } from './mail/mail.service';  
 
 @Module({
   imports: [
     MailerModule.forRoot({
       transport: {
-        host: 'smtp.example.com',
-        port: 587,
+        host: 'smtp.gmail.com',  // Servidor SMTP de Gmail
+        port: 587,               
+        secure: false,           // true para puerto 465 (SSL), false para 587 (TLS)
         auth: {
-          user: 'user@example.com',
-          pass: 'password',
+          user: process.env.MAIL_FROM,  // vitalsense2025@gmail.com
+          pass: process.env.MAIL_PASSWORD,  // ecub jsrn xyct dcne
         },
       },
       defaults: {
-        from: '"No Reply" <noreply@example.com>',
+        from: '"VitalSense" <vitalsense2025@gmail.com>',  // From amigable para inbox
+      },
+      template: {
+        dir: join(__dirname, 'mail/templates'),  // Carpeta para plantillas Handlebars (opcional)
+        adapter: new HandlebarsAdapter(),        // Usa Handlebars para HTML
+        options: {
+          strict: true,
+        },
       },
     }),
     ConfigModule.forRoot({ isGlobal: true }),
@@ -48,6 +59,7 @@ import { ConfigModule } from '@nestjs/config';
     ConfigurationModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [MailService],
+  exports: [MailService],
 })
 export class AppModule {}

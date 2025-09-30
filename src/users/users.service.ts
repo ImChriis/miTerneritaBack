@@ -13,6 +13,12 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
+  async findByCedula(cedula: string): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { cedula },
+      relations: ['role'],
+    });
+  }
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,

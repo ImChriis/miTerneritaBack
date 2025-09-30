@@ -24,15 +24,15 @@ export class PaymentDetails {
   @JoinColumn({ name: 'idPayment' })
   payment: Payment;
 
-  @ManyToOne(() => Event, { eager: true })
+  @ManyToOne(() => Event, { eager: false })
   @JoinColumn({ name: 'idEvent' })
   event: Event;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'idUser ' })
   user: User;
 
-  @ManyToOne(() => Ticket, { eager: true })
+  @ManyToOne(() => Ticket, { eager: false })
   @JoinColumn({ name: 'idTicket' })
   ticket: Ticket;
 

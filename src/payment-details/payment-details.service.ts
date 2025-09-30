@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger, 
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -13,9 +14,12 @@ import { Ticket } from '../tickets/entities/ticket.entity';
 import { ConsumeDetails } from '../consumeDetails/entities/consumeDetail.entity';
 import { CreatePaymentDetailsDto } from './dto/create-payment-detail.dto';
 import { UpdatePaymentDetailsStatusDto } from './dto/update-payment-detail-status.dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class PaymentDetailsService {
+  private readonly logger = new Logger(PaymentDetailsService.name);
+
   constructor(
     @InjectRepository(PaymentDetails)
     private paymentDetailsRepository: Repository<PaymentDetails>,
@@ -34,6 +38,8 @@ export class PaymentDetailsService {
 
     @InjectRepository(ConsumeDetails)
     private consumeDetailsRepository: Repository<ConsumeDetails>,
+
+    private readonly mailService: MailService,
   ) {}
 
   async create(
@@ -101,22 +107,41 @@ export class PaymentDetailsService {
       scanned,
     });
 
-    return this.paymentDetailsRepository.save(paymentDetails);
+    const savedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
+
+    // No enviamos correo en la creación, solo en la actualización a 'scanned: true'
+    // if (savedPaymentDetails.scanned) {
+    //   await this.mailService.sendTicketScannedConfirmation(savedPaymentDetails);
+    // }
+
+    return savedPaymentDetails;
   }
 
   async updateStatus(
     id: number,
     updateStatusDto: UpdatePaymentDetailsStatusDto,
   ): Promise<PaymentDetails> {
+    // Cargar PaymentDetails con las relaciones necesarias para el correo
     const paymentDetails = await this.paymentDetailsRepository.findOne({
       where: { id },
+      relations: ['user', 'event', 'ticket', 'payment'], // Asegúrate de cargar estas relaciones
     });
     if (!paymentDetails) {
       throw new NotFoundException('Detalle de pago no encontrado');
     }
 
+    // Solo enviar correo si el estado cambia a 'scanned: true' y antes no lo estaba
+    const shouldSendEmail = !paymentDetails.scanned && updateStatusDto.scanned === true;
+
     paymentDetails.scanned = updateStatusDto.scanned;
-    return this.paymentDetailsRepository.save(paymentDetails);
+    const updatedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
+
+    if (shouldSendEmail) {
+      this.logger.log(`PaymentDetail ID ${id} actualizado a scanned: true. Enviando correo...`);
+      await this.mailService.sendTicketScannedConfirmation(updatedPaymentDetails);
+    }
+
+    return updatedPaymentDetails;
   }
 
   async findAll(): Promise<PaymentDetails[]> {
