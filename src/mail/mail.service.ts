@@ -32,11 +32,11 @@ export class MailService {
     const userName = paymentDetail.user.name;
     const eventName = paymentDetail.event.name;
     const ticketName = paymentDetail.ticket.name;
-    const paymentId = paymentDetail.payment.id;
+    const paymentId = paymentDetail.payment.idPayment;
     const paymentDetailId = paymentDetail.id;
 
     // Generar QR Code con información relevante del ticket escaneado
-    const qrData = `PaymentDetailID:${paymentDetailId};PaymentID:${paymentId};User:${paymentDetail.user.id};Event:${paymentDetail.event.id};Ticket:${paymentDetail.ticket.id};Scanned:true`;
+    const qrData = `PaymentDetailID:${paymentDetailId};PaymentID:${paymentId};User:${paymentDetail.user.id};Event:${paymentDetail.event.idEvents};Ticket:${paymentDetail.ticket.idTicket};Scanned:true`;
     let qrCodeImage: string;
     try {
       qrCodeImage = await QRCode.toDataURL(qrData);

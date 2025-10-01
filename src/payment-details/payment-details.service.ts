@@ -55,14 +55,14 @@ export class PaymentDetailsService {
     } = createPaymentDetailsDto;
 
     const payment = await this.paymentsRepository.findOne({
-      where: { id: idPayment },
+      where: { idPayment: idPayment },
     });
     if (!payment) {
       throw new NotFoundException('Pago no encontrado');
     }
 
     const event = await this.eventsRepository.findOne({
-      where: { id: idEvent },
+      where: { idEvents: idEvent },
     });
     if (!event) {
       throw new NotFoundException('Evento no encontrado');
@@ -74,7 +74,7 @@ export class PaymentDetailsService {
     }
 
     const ticket = await this.ticketsRepository.findOne({
-      where: { id: idTicket },
+      where: { idTicket: idTicket },
     });
     if (!ticket) {
       throw new NotFoundException('Ticket no encontrado');
@@ -83,14 +83,14 @@ export class PaymentDetailsService {
     let consumeDetails: ConsumeDetails | null = null;
     if (idConsumeDetails) {
       consumeDetails = await this.consumeDetailsRepository.findOne({
-        where: { id: idConsumeDetails },
+        where: { idConsumeDetails: idConsumeDetails },
       });
       // Si no existe, simplemente se deja como null (opcional)
     }
 
     // Verificar si ya existe PaymentDetails para este payment y ticket
     const existing = await this.paymentDetailsRepository.findOne({
-      where: { payment: { id: idPayment }, ticket: { id: idTicket } },
+      where: { payment: { idPayment: idPayment }, ticket: { idTicket: idTicket } },
     });
     if (existing) {
       throw new BadRequestException(

@@ -15,34 +15,10 @@ import { CodeModule } from './code/code.module';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule } from '@nestjs/config';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-import { join } from 'path';
 import { MailService } from './mail/mail.service';  
 
 @Module({
-  imports: [
-    MailerModule.forRoot({
-      transport: {
-        host: 'smtp.gmail.com',  // Servidor SMTP de Gmail
-        port: 587,               
-        secure: false,           // true para puerto 465 (SSL), false para 587 (TLS)
-        auth: {
-          user: process.env.MAIL_FROM,  // vitalsense2025@gmail.com
-          pass: process.env.MAIL_PASSWORD,  // ecub jsrn xyct dcne
-        },
-      },
-      defaults: {
-        from: '"VitalSense" <vitalsense2025@gmail.com>',  // From amigable para inbox
-      },
-      template: {
-        dir: join(__dirname, 'mail/templates'),  // Carpeta para plantillas Handlebars (opcional)
-        adapter: new HandlebarsAdapter(),        // Usa Handlebars para HTML
-        options: {
-          strict: true,
-        },
-      },
-    }),
-    ConfigModule.forRoot({ isGlobal: true }),
+  imports: [ ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
     AuthModule,
     UsersModule,
@@ -57,6 +33,21 @@ import { MailService } from './mail/mail.service';
     PaymentMethodModule,
     CodeModule,
     ConfigurationModule,
+    MailerModule.forRoot({
+      transport: {
+        host: process.env.MAIL_HOST,  
+        port: Number(process.env.MAIL_PORT),               
+        secure: false, // true para puerto 465 (SSL), false para 587 (TLS)
+        auth: {
+          user: process.env.MAIL_USER, // josecaherofficial@gmail.com
+          pass: process.env.MAIL_PASSWORD, // smvt qult bmel uigc
+        },
+      },
+      defaults: {
+        from: '"Mi Ternerita House" <${process.env.MAIL_FROM}>',  // From amigable para inbox
+      },
+      //
+    }),
   ],
   controllers: [],
   providers: [MailService],

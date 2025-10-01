@@ -56,9 +56,9 @@ export class PaymentsService {
       throw new NotFoundException('Usuario no encontrado');
     }
     
-    this.eventsRepository.findOne({where: {id: createPaymentDto.idEvent}})
+    this.eventsRepository.findOne({where: {idEvents: createPaymentDto.idEvent}})
     const event = await this.eventsRepository.findOne({
-      where: { id: createPaymentDto.idEvent },
+      where: { idEvents: createPaymentDto.idEvent },
     });
     if (!event) {
       throw new NotFoundException('Evento no encontrado');
@@ -98,8 +98,8 @@ export class PaymentsService {
       for (const item of consumeItems) {
         if (item.detailType === 'ticket' && item.idTicket) {
           await this.paymentDetailsService.create({
-            idPayment: savedPayment.id,
-            idEvent: event.id,
+            idPayment: savedPayment.idPayment,
+            idEvent: event.idEvents,
             idUser: user.id,
             idTicket: item.idTicket,
             quantity: item.quantity,
@@ -108,7 +108,7 @@ export class PaymentsService {
           });
         } else if ((item.detailType === 'food' && item.idFood) || (item.detailType === 'drink' && item.idDrink)) {
           await this.consumeDetailsService.create({
-            idPayment: savedPayment.id,
+            idPayment: savedPayment.idPayment,
             idFood: item.idFood,
             idDrink: item.idDrink,
             quantity: item.quantity,
@@ -126,7 +126,7 @@ export class PaymentsService {
   updatePaymentStatusDto: UpdatePaymentStatusDto,
 ): Promise<Payment> {
   const payment = await this.paymentsRepository.findOne({
-    where: { id },
+    where: { idPayment: id },
     relations: ['user', 'event'], // Asegúrate de cargar user y event para el correo
   });
   if (!payment) {
@@ -141,14 +141,14 @@ export class PaymentsService {
   // Enviar correo solo si el estado cambia a 'completed'
   if (oldStatus !== 'completed' && updatedPayment.status === 'completed') {
     this.logger.log(`Payment ID ${id} actualizado a completed. Enviando correo de confirmación...`);
-    await this.sendPaymentConfirmationEmail(updatedPayment.user.email, updatedPayment);
+    await this.sendPaymentConfirmationEmail(updatedPayment.IdUser.email, updatedPayment);
   }
   return updatedPayment;
   }
   
   async findOne(id: number): Promise<Payment> {
     const payment = await this.paymentsRepository.findOne({
-      where: { id },
+      where: { idPayment: id },
       relations: ['user', 'event', 'consumeDetails', 'paymentDetails'],
     });
     if (!payment) {
@@ -161,10 +161,10 @@ export class PaymentsService {
     try {
       // Cargar detalles relacionados
       const paymentWithDetails = await this.paymentsRepository.findOne({
-        where: { id: payment.id },
+        where: { idPayment: payment.idPayment },
         relations: ['user', 'event', 'consumeDetails', 'paymentDetails'],
       });
-      const qrData = `PaymentID:${payment.id};User:${payment.user.id};Event:${payment.event.id};AmountUSD:${payment.amountUSD};AmountBS:${payment.amountBS};Status:${payment.status}`;
+      const qrData = `PaymentID:${payment.idPayment};User:${payment.IdUser.id};Event:${payment.IdEvent.idEvents};AmountUSD:${payment.amountUSD};AmountBS:${payment.amountBS};Status:${payment.status}`;
       const qrCodeImage = await QRCode.toDataURL(qrData);
 
       // Construir detalles de ítems comprados
@@ -177,11 +177,11 @@ export class PaymentsService {
         }
         if (paymentWithDetails.consumeDetails && paymentWithDetails.consumeDetails.length > 0) {
           for (const consume of paymentWithDetails.consumeDetails) {
-            if (consume.food) {
-              itemsHtml += `<li>Food: ${consume.food.name} - Cantidad: ${consume.quantity}</li>`;
+            if (consume.idFood) {
+              itemsHtml += `<li>Food: ${consume.idFood.description} - Cantidad: ${consume.quantity}</li>`;
             }
-            if (consume.drink) {
-              itemsHtml += `<li>Drink: ${consume.drink.name} - Cantidad: ${consume.quantity}</li>`;
+            if (consume.idDrink) {
+              itemsHtml += `<li>Drink: ${consume.idDrink.description} - Cantidad: ${consume.quantity}</li>`;
             }
           }
         }
@@ -207,5 +207,11 @@ export class PaymentsService {
     // Por simplicidad, asumimos que se guarda en una tabla llamada ExchangeRate
     // Implementar según necesidad
     this.logger.log(`Tasa de cambio actualizada a ${newRate}`);
+  }
+  
+  async findAll(): Promise<Payment[]> {
+    return this.paymentsRepository.find({
+      relations: ['user', 'event', 'consumeDetails', 'paymentDetails'],
+    });
   }
 }

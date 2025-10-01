@@ -35,11 +35,11 @@ export class PaymentsController {
     return this.paymentsService.updateStatus(id, updatePaymentStatusDto);
   }
 
-  /*@Get()
+  @Get()
   @Roles('admin')
   async findAll() {
     return this.paymentsService.findAll();
-  }*/
+  }
 
   @Get(':id')
   @Roles('admin', 'user')

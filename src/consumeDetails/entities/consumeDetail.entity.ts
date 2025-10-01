@@ -12,15 +12,23 @@ import { Payment } from '../../payments/entities/payment.entity';
 @Entity('ConsumeDetails')
 export class ConsumeDetails {
   @PrimaryGeneratedColumn({ name: 'idConsumeDetails' })
-  id: number;
+  idConsumeDetails: number;
 
   @ManyToOne(() => Food, { nullable: true })
   @JoinColumn({ name: 'idFood' })
-  food: Food;
+  idFood: Food;
+
+  @ManyToOne(() => Food, { nullable: true })
+  @JoinColumn({ name: 'foodAmount' })
+  foodAmount: number;
 
   @ManyToOne(() => Drink, { nullable: true })
   @JoinColumn({ name: 'idDrink' })
-  drink: Drink;
+  idDrink: Drink;
+
+  @ManyToOne(() => Drink, { nullable: true })
+  @JoinColumn({ name: 'drinksAmount' })
+  drinksAmount: number;
 
   @ManyToOne(() => Payment, { nullable: false })
   @JoinColumn({ name: 'idPayment' })

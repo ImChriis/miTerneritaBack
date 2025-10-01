@@ -15,15 +15,15 @@ import { PaymentDetails } from '../../payment-details/entities/paymentDetail.ent
 @Entity('Payments')
 export class Payment {
   @PrimaryGeneratedColumn({ name: 'idPayment' })
-  id: number;
+  idPayment: number;
 
   @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'idUser ' })
-  user: User;
+  IdUser: User;
 
   @ManyToOne(() => Event, { eager: false })
   @JoinColumn({ name: 'idEvent' })
-  event: Event;
+  IdEvent: Event;
 
   @Column('decimal', { precision: 15, scale: 2 })
   amountUSD: number;

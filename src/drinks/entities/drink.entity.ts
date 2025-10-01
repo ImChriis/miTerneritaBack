@@ -3,10 +3,10 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 @Entity('Drinks')
 export class Drink {
   @PrimaryGeneratedColumn({ name: 'idDrinks' })
-  id: number;
+  idDrinks: number;
 
   @Column({ length: 150 })
-  name: string;
+  description: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;

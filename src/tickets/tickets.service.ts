@@ -22,7 +22,7 @@ export class TicketsService {
 
   async create(createTicketDto: CreateTicketDto): Promise<Ticket> {
     const event = await this.eventsRepository.findOne({
-      where: { id: createTicketDto.idEvent },
+      where: { idEvents: createTicketDto.idEvent },
     });
     if (!event) {
       throw new BadRequestException('Evento no encontrado');
@@ -32,7 +32,7 @@ export class TicketsService {
       name: createTicketDto.name,
       price: createTicketDto.price,
       status: createTicketDto.status,
-      event,
+      event: event,
     });
 
     return this.ticketsRepository.save(ticket);
@@ -44,7 +44,7 @@ export class TicketsService {
 
   async findOne(id: number): Promise<Ticket> {
     const ticket = await this.ticketsRepository.findOne({
-      where: { id },
+      where: { idTicket: id },
       relations: ['event'],
     });
     if (!ticket) {
@@ -58,7 +58,7 @@ export class TicketsService {
 
     if (updateTicketDto.idEvent) {
       const event = await this.eventsRepository.findOne({
-        where: { id: updateTicketDto.idEvent },
+        where: { idEvents: updateTicketDto.idEvent },
       });
       if (!event) {
         throw new BadRequestException('Evento no encontrado');

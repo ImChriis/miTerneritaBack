@@ -22,7 +22,7 @@ export class DrinksService {
   }
 
   async findOne(id: number): Promise<Drink> {
-    const drink = await this.drinksRepository.findOne({ where: { id } });
+    const drink = await this.drinksRepository.findOne({ where: { idDrinks: id } });
     if (!drink) {
       throw new NotFoundException('Bebida no encontrada');
     }

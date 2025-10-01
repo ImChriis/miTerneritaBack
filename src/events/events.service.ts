@@ -26,7 +26,7 @@ export class EventsService {
   }
 
   async findOne(id: number): Promise<Event> {
-    const event = await this.eventsRepository.findOne({ where: { id } });
+    const event = await this.eventsRepository.findOne({ where: { idEvents: id } });
     if (!event) {
       throw new NotFoundException('Evento no encontrado');
     }

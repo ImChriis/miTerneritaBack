@@ -1,16 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity('PaymentMethods')
+@Entity('PaymentMethod')
 export class PaymentMethod {
   @PrimaryGeneratedColumn({ name: 'idMethod' })
-  id: number;
-
-  @Column({ length: 100, unique: true })
-  name: string;
+  idMethod: number;
 
   @Column({ length: 255, nullable: true })
   description: string;
 
-  @Column('tinyint')
-  status: number; // 0 = inactive, 1 = active
 }

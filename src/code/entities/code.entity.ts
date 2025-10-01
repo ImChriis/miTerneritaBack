@@ -10,7 +10,7 @@ import { Payment } from '../../payments/entities/payment.entity';
 @Entity('Code')
 export class Code {
   @PrimaryGeneratedColumn({ name: 'idCode' })
-  id: number;
+  idCode: number;
 
   @Column('text')
   QR: string;

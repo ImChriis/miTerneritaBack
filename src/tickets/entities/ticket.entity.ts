@@ -10,7 +10,7 @@ import { Event } from '../../events/entities/event.entity';
 @Entity('Ticket')
 export class Ticket {
   @PrimaryGeneratedColumn({ name: 'idTicket' })
-  id: number;
+  idTicket: number;
 
   @Column({ length: 100 })
   name: string;
@@ -21,7 +21,7 @@ export class Ticket {
   @Column('tinyint')
   status: number;
 
-  @ManyToOne(() => Event, (event) => event.id, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'idEvent' })
+  @ManyToOne(() => Event, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'idEvents' })
   event: Event;
 }

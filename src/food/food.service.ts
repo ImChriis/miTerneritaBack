@@ -22,7 +22,7 @@ export class FoodService {
   }
 
   async findOne(id: number): Promise<Food> {
-    const food = await this.foodRepository.findOne({ where: { id } });
+    const food = await this.foodRepository.findOne({ where: { idFood: id } });
     if (!food) {
       throw new NotFoundException('Alimento no encontrado');
     }

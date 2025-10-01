@@ -17,7 +17,7 @@ export class CodeService {
 
   async create(createCodeDto: CreateCodeDto): Promise<Code> {
     const payment = await this.paymentRepository.findOne({
-      where: { id: createCodeDto.idPayment },
+      where: { idPayment: createCodeDto.idPayment },
     });
     if (!payment) {
       throw new NotFoundException('Pago no encontrado');
@@ -37,7 +37,7 @@ export class CodeService {
 
   async findOne(id: number): Promise<Code> {
     const code = await this.codeRepository.findOne({
-      where: { id },
+      where: { idCode: id },
       relations: ['payment'],
     });
     if (!code) {

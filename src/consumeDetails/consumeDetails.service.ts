@@ -41,7 +41,7 @@ export class ConsumeDetailsService {
     }
 
     const payment = await this.paymentRepository.findOne({
-      where: { id: idPayment },
+      where: { idPayment: idPayment },
     });
     if (!payment) {
       throw new NotFoundException('Pago no encontrado');
@@ -51,22 +51,22 @@ export class ConsumeDetailsService {
     let drink: Drink | null = null;
 
     if (idFood) {
-      food = await this.foodRepository.findOne({ where: { id: idFood } });
+      food = await this.foodRepository.findOne({ where: { idFood: idFood } });
       if (!food) {
         throw new NotFoundException('Alimento no encontrado');
       }
     }
 
     if (idDrink) {
-      drink = await this.drinkRepository.findOne({ where: { id: idDrink } });
+      drink = await this.drinkRepository.findOne({ where: { idDrinks: idDrink } });
       if (!drink) {
         throw new NotFoundException('Bebida no encontrada');
       }
     }
 
     const consumeDetails = this.consumeDetailsRepository.create({
-      food: food ?? undefined,
-      drink: drink ?? undefined,
+      idFood: food ?? undefined,
+      idDrink: drink ?? undefined,
       payment,
       quantity,
     });
@@ -82,14 +82,14 @@ export class ConsumeDetailsService {
 
   async findByPayment(idPayment: number): Promise<ConsumeDetails[]> {
     return this.consumeDetailsRepository.find({
-      where: { payment: { id: idPayment } },
+      where: { payment: { idPayment: idPayment } },
       relations: ['food', 'drink', 'payment'],
     });
   }
 
   async remove(id: number): Promise<void> {
     const consumeDetails = await this.consumeDetailsRepository.findOne({
-      where: { id },
+      where: { idConsumeDetails: id },
     });
     if (!consumeDetails) {
       throw new NotFoundException('Detalle de consumo no encontrado');
