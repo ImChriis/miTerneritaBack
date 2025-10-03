@@ -7,7 +7,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Payment } from './entities/payment.entity';
-// import { PaymentDetails } from './entities/paymentDetails.entity'; // Deleted entity
 import { User } from '../users/entities/user.entity';
 import { Event } from '../events/entities/event.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -25,8 +24,6 @@ export class PaymentsService {
     @InjectRepository(Payment)
     private paymentsRepository: Repository<Payment>,
 
-  // Removed PaymentDetails repository
-
     @InjectRepository(User)
     private usersRepository: Repository<User>,
 
@@ -35,9 +32,9 @@ export class PaymentsService {
 
     private readonly dataSource: DataSource,
 
-  private readonly mailerService: MailerService,
-  private readonly paymentDetailsService: PaymentDetailsService,
-  private readonly consumeDetailsService: ConsumeDetailsService,
+    private readonly mailerService: MailerService,
+    private readonly paymentDetailsService: PaymentDetailsService,
+    private readonly consumeDetailsService: ConsumeDetailsService,
   ) {}
 
   async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
@@ -55,8 +52,7 @@ export class PaymentsService {
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
-    
-    this.eventsRepository.findOne({where: {idEvents: createPaymentDto.idEvent}})
+
     const event = await this.eventsRepository.findOne({
       where: { idEvents: createPaymentDto.idEvent },
     });
@@ -85,8 +81,8 @@ export class PaymentsService {
     // Transacción para crear Payment y PaymentDetails
     return this.dataSource.transaction(async (manager) => {
       const payment = manager.create(Payment, {
-        user,
-        event,
+        IdUser: user, // Asignar la instancia de User
+        IdEvent: event, // Asignar la instancia de Event
         amountUSD,
         amountBS,
         paymentMethod,
@@ -99,14 +95,17 @@ export class PaymentsService {
         if (item.detailType === 'ticket' && item.idTicket) {
           await this.paymentDetailsService.create({
             idPayment: savedPayment.idPayment,
-            idEvent: event.idEvents,
+            idEvents: event.idEvents,
             idUser: user.id,
             idTicket: item.idTicket,
-            quantity: item.quantity,
-            price: item.price,
-            scanned: false,
+            precio: item.price,
+            checked: false,
+            status: 0,
           });
-        } else if ((item.detailType === 'food' && item.idFood) || (item.detailType === 'drink' && item.idDrink)) {
+        } else if (
+          (item.detailType === 'food' && item.idFood) ||
+          (item.detailType === 'drink' && item.idDrink)
+        ) {
           await this.consumeDetailsService.create({
             idPayment: savedPayment.idPayment,
             idFood: item.idFood,
@@ -122,34 +121,39 @@ export class PaymentsService {
   }
 
   async updateStatus(
-  id: number,
-  updatePaymentStatusDto: UpdatePaymentStatusDto,
-): Promise<Payment> {
-  const payment = await this.paymentsRepository.findOne({
-    where: { idPayment: id },
-    relations: ['user', 'event'], // Asegúrate de cargar user y event para el correo
-  });
-  if (!payment) {
-    throw new NotFoundException('Pago no encontrado');
+    id: number,
+    updatePaymentStatusDto: UpdatePaymentStatusDto,
+  ): Promise<Payment> {
+    const payment = await this.paymentsRepository.findOne({
+      where: { idPayment: id },
+      relations: ['IdUser', 'IdEvent'], // Asegúrate de cargar IdUser y IdEvent para el correo
+    });
+    if (!payment) {
+      throw new NotFoundException('Pago no encontrado');
+    }
+    if (payment.status === updatePaymentStatusDto.status) {
+      throw new BadRequestException('El estado es el mismo que el actual');
+    }
+    const oldStatus = payment.status;
+    payment.status = updatePaymentStatusDto.status;
+    const updatedPayment = await this.paymentsRepository.save(payment);
+    // Enviar correo solo si el estado cambia a 'completed'
+    if (oldStatus !== 'completed' && updatedPayment.status === 'completed') {
+      this.logger.log(
+        `Payment ID ${id} actualizado a completed. Enviando correo de confirmación...`,
+      );
+      await this.sendPaymentConfirmationEmail(
+        updatedPayment.IdUser.email,
+        updatedPayment,
+      );
+    }
+    return updatedPayment;
   }
-  if (payment.status === updatePaymentStatusDto.status) {
-    throw new BadRequestException('El estado es el mismo que el actual');
-  }
-  const oldStatus = payment.status;
-  payment.status = updatePaymentStatusDto.status;
-  const updatedPayment = await this.paymentsRepository.save(payment);
-  // Enviar correo solo si el estado cambia a 'completed'
-  if (oldStatus !== 'completed' && updatedPayment.status === 'completed') {
-    this.logger.log(`Payment ID ${id} actualizado a completed. Enviando correo de confirmación...`);
-    await this.sendPaymentConfirmationEmail(updatedPayment.IdUser.email, updatedPayment);
-  }
-  return updatedPayment;
-  }
-  
+
   async findOne(id: number): Promise<Payment> {
     const payment = await this.paymentsRepository.findOne({
       where: { idPayment: id },
-      relations: ['user', 'event', 'consumeDetails', 'paymentDetails'],
+      relations: ['IdUser', 'IdEvent', 'consumeDetails', 'paymentDetails'], // Ajustar a IdUser, IdEvent
     });
     if (!payment) {
       throw new NotFoundException('Pago no encontrado');
@@ -162,7 +166,7 @@ export class PaymentsService {
       // Cargar detalles relacionados
       const paymentWithDetails = await this.paymentsRepository.findOne({
         where: { idPayment: payment.idPayment },
-        relations: ['user', 'event', 'consumeDetails', 'paymentDetails'],
+        relations: ['IdUser', 'IdEvent', 'consumeDetails.idFood', 'consumeDetails.idDrink', 'paymentDetails.idTicket'], // Ajustar a IdUser, IdEvent y cargar relaciones anidadas
       });
       const qrData = `PaymentID:${payment.idPayment};User:${payment.IdUser.id};Event:${payment.IdEvent.idEvents};AmountUSD:${payment.amountUSD};AmountBS:${payment.amountBS};Status:${payment.status}`;
       const qrCodeImage = await QRCode.toDataURL(qrData);
@@ -170,18 +174,27 @@ export class PaymentsService {
       // Construir detalles de ítems comprados
       let itemsHtml = '<ul>';
       if (paymentWithDetails) {
-        if (paymentWithDetails.paymentDetails && paymentWithDetails.paymentDetails.length > 0) {
+        if (
+          paymentWithDetails.paymentDetails &&
+          paymentWithDetails.paymentDetails.length > 0
+        ) {
           for (const detail of paymentWithDetails.paymentDetails) {
-            itemsHtml += `<li>Ticket: ${detail.ticket?.name || 'N/A'} - Cantidad: ${(detail as any).quantity || 1} - Precio: $${(detail as any).price || 'N/A'}</li>`;
+            // Acceder a idTicket de la entidad PaymentDetails
+            itemsHtml += `<li>Ticket: ${detail.idTicket?.name || 'N/A'} - Cantidad: ${
+              (detail as any).quantity || 1
+            } - Precio: $${(detail as any).price || 'N/A'}</li>`;
           }
         }
-        if (paymentWithDetails.consumeDetails && paymentWithDetails.consumeDetails.length > 0) {
+        if (
+          paymentWithDetails.consumeDetails &&
+          paymentWithDetails.consumeDetails.length > 0
+        ) {
           for (const consume of paymentWithDetails.consumeDetails) {
             if (consume.idFood) {
-              itemsHtml += `<li>Food: ${consume.idFood.description} - Cantidad: ${consume.quantity}</li>`;
+              itemsHtml += `<li>Food: ${consume.idFood.description} - Cantidad: ${consume.totalConsume}</li>`;
             }
             if (consume.idDrink) {
-              itemsHtml += `<li>Drink: ${consume.idDrink.description} - Cantidad: ${consume.quantity}</li>`;
+              itemsHtml += `<li>Drink: ${consume.idDrink.description} - Cantidad: ${consume.totalConsume}</li>`;
             }
           }
         }
@@ -208,10 +221,10 @@ export class PaymentsService {
     // Implementar según necesidad
     this.logger.log(`Tasa de cambio actualizada a ${newRate}`);
   }
-  
+
   async findAll(): Promise<Payment[]> {
     return this.paymentsRepository.find({
-      relations: ['user', 'event', 'consumeDetails', 'paymentDetails'],
+      relations: ['IdUser', 'IdEvent', 'consumeDetails', 'paymentDetails'], // Ajustar a IdUser, IdEvent
     });
   }
 }

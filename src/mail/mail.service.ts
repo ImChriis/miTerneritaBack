@@ -28,15 +28,15 @@ export class MailService {
 
   // Nuevo método para enviar confirmación de ticket escaneado
   async sendTicketScannedConfirmation(paymentDetail: PaymentDetails) {
-    const userEmail = paymentDetail.user.email;
-    const userName = paymentDetail.user.name;
-    const eventName = paymentDetail.event.name;
-    const ticketName = paymentDetail.ticket.name;
+    const userEmail = paymentDetail.idUser.email;
+    const userName = paymentDetail.idUser.name;
+    const eventName = paymentDetail.idEvent.name;
+    const ticketName = paymentDetail.idTicket.name;
     const paymentId = paymentDetail.payment.idPayment;
-    const paymentDetailId = paymentDetail.id;
+    const paymentDetailId = paymentDetail.idPaymentDetails;
 
     // Generar QR Code con información relevante del ticket escaneado
-    const qrData = `PaymentDetailID:${paymentDetailId};PaymentID:${paymentId};User:${paymentDetail.user.id};Event:${paymentDetail.event.idEvents};Ticket:${paymentDetail.ticket.idTicket};Scanned:true`;
+    const qrData = `PaymentDetailID:${paymentDetailId};PaymentID:${paymentId};User:${paymentDetail.idUser.id};Event:${paymentDetail.idEvent.idEvents};Ticket:${paymentDetail.idTicket.idTicket};Scanned:true`;
     let qrCodeImage: string;
     try {
       qrCodeImage = await QRCode.toDataURL(qrData);

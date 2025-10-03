@@ -2,7 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  Logger, 
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -47,13 +47,16 @@ export class PaymentDetailsService {
   ): Promise<PaymentDetails> {
     const {
       idPayment,
-      idEvent,
+      idEvents : idEvent,
       idUser,
       idTicket,
       idConsumeDetails,
-      scanned = false,
+      precio : price,
+      checked = false,
+      status = 0,
     } = createPaymentDetailsDto;
 
+    // Obtener instancias completas de las entidades relacionadas
     const payment = await this.paymentsRepository.findOne({
       where: { idPayment: idPayment },
     });
@@ -80,17 +83,20 @@ export class PaymentDetailsService {
       throw new NotFoundException('Ticket no encontrado');
     }
 
-    let consumeDetails: ConsumeDetails | null = null;
+    let consumeDetails: ConsumeDetails | undefined = undefined;
     if (idConsumeDetails) {
-      consumeDetails = await this.consumeDetailsRepository.findOne({
+      const found = await this.consumeDetailsRepository.findOne({
         where: { idConsumeDetails: idConsumeDetails },
       });
-      // Si no existe, simplemente se deja como null (opcional)
+      consumeDetails = found ?? undefined; // Convert null to undefined
     }
 
     // Verificar si ya existe PaymentDetails para este payment y ticket
     const existing = await this.paymentDetailsRepository.findOne({
-      where: { payment: { idPayment: idPayment }, ticket: { idTicket: idTicket } },
+      where: {
+        payment: { idPayment: idPayment },
+        idTicket: { idTicket: idTicket },
+      },
     });
     if (existing) {
       throw new BadRequestException(
@@ -98,22 +104,29 @@ export class PaymentDetailsService {
       );
     }
 
+    // Usar el precio del DTO o el precio del ticket si no se proporciona
+    const finalPrice = price ?? ticket.price;
+
     const paymentDetails = this.paymentDetailsRepository.create({
       payment,
-      event,
-      user,
-      ticket,
-      ...(consumeDetails ? { consumeDetails } : {}),
-      scanned,
+      idEvent: event,
+      idUser: user,
+      ticketNum: createPaymentDetailsDto.ticketNum,
+      precio: finalPrice,
+      totalBase : createPaymentDetailsDto.totalBase,
+      impuestoCalculado : createPaymentDetailsDto.impuestoCalculado,
+      total : createPaymentDetailsDto.total,
+      tasaDolarEvento : createPaymentDetailsDto.tasaDolarEvento,
+      totalDolarEvento : createPaymentDetailsDto.totalDolarEvento,
+      idTicket: ticket,
+      idConsumeDetails: consumeDetails,
+      status,
+      checked,
     });
 
-    const savedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
-
-    // No enviamos correo en la creación, solo en la actualización a 'scanned: true'
-    // if (savedPaymentDetails.scanned) {
-    //   await this.mailService.sendTicketScannedConfirmation(savedPaymentDetails);
-    // }
-
+    const savedPaymentDetails = await this.paymentDetailsRepository.save(
+      paymentDetails,
+    );
     return savedPaymentDetails;
   }
 
@@ -123,21 +136,31 @@ export class PaymentDetailsService {
   ): Promise<PaymentDetails> {
     // Cargar PaymentDetails con las relaciones necesarias para el correo
     const paymentDetails = await this.paymentDetailsRepository.findOne({
-      where: { id },
-      relations: ['user', 'event', 'ticket', 'payment'], // Asegúrate de cargar estas relaciones
+      where: { idPaymentDetails: id },
+      relations: ['idUser', 'idEvent', 'idTicket', 'idPayment'], // Asegúrate de cargar estas relaciones
     });
     if (!paymentDetails) {
       throw new NotFoundException('Detalle de pago no encontrado');
     }
 
     // Solo enviar correo si el estado cambia a 'scanned: true' y antes no lo estaba
-    const shouldSendEmail = !paymentDetails.scanned && updateStatusDto.scanned === true;
+    const shouldSendEmail =
+      !paymentDetails.checked && updateStatusDto.checked === true;
 
-    paymentDetails.scanned = updateStatusDto.scanned;
-    const updatedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
+    paymentDetails.checked = updateStatusDto.checked;
+    const updatedPaymentDetails = await this.paymentDetailsRepository.save(
+      paymentDetails,
+    );
 
     if (shouldSendEmail) {
-      this.logger.log(`PaymentDetail ID ${id} actualizado a scanned: true. Enviando correo...`);
+      this.logger.log(
+        `PaymentDetail ID ${id} actualizado a checked: true. Enviando correo...`,
+      );
+      // Asegúrate de que las propiedades de paymentDetail sean accesibles como se espera en MailService
+      // Si MailService espera 'user', 'event', 'ticket', 'payment' directamente,
+      // y tus relaciones son 'idUser', 'idEvent', 'idTicket', 'idPayment',
+      // podrías necesitar un mapeo o ajustar la entidad PaymentDetails para usar nombres más directos.
+      // Por ahora, asumo que MailService puede manejar 'idUser.email', 'idEvent.name', etc.
       await this.mailService.sendTicketScannedConfirmation(updatedPaymentDetails);
     }
 
@@ -146,14 +169,14 @@ export class PaymentDetailsService {
 
   async findAll(): Promise<PaymentDetails[]> {
     return this.paymentDetailsRepository.find({
-      relations: ['payment', 'event', 'user', 'ticket', 'consumeDetails'],
+      relations: ['payment', 'idEvent', 'idUser', 'idTicket', 'idConsumeDetails'],
     });
   }
 
   async findOne(id: number): Promise<PaymentDetails> {
     const paymentDetails = await this.paymentDetailsRepository.findOne({
-      where: { id },
-      relations: ['payment', 'event', 'user', 'ticket', 'consumeDetails'],
+      where: { idPaymentDetails: id },
+      relations: ['payment', 'idEvent', 'idUser', 'idTicket', 'idConsumeDetails'],
     });
     if (!paymentDetails) {
       throw new NotFoundException('Detalle de pago no encontrado');

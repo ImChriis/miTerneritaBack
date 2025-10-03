@@ -24,7 +24,7 @@ export class RolesService {
   }
 
   async findById(id: number): Promise<Role | null> {
-    return this.rolesRepository.findOne({ where: { id } });
+    return this.rolesRepository.findOne({ where: { idRol: id } });
   }
 
   async create(createRoleDto: CreateRoleDto): Promise<Role> {

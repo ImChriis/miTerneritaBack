@@ -1,30 +1,18 @@
 import { IsInt, IsBoolean, IsOptional, Min } from 'class-validator';
 
 export class CreatePaymentDetailsDto {
-  @IsOptional()
-  @IsInt()
-  readonly quantity?: number;
-
-  @IsOptional()
-  @Min(0)
-  readonly price?: number;
-  @IsInt()
-  readonly idPayment: number;
-
-  @IsInt()
-  readonly idEvent: number;
-
-  @IsInt()
-  readonly idUser: number;
-
-  @IsInt()
-  readonly idTicket: number;
-
-  @IsOptional()
-  @IsInt()
-  readonly idConsumeDetails?: number;
-
-  @IsOptional()
-  @IsBoolean()
-  readonly scanned?: boolean;
+  idPayment: number;
+  idEvents: number;
+  idUser: number;
+  ticketNum?: number;
+  precio: number;
+  totalBase?: number;
+  impuestoCalculado?: number;
+  total?: number;
+  tasaDolarEvento?: number;
+  totalDolarEvento?: number;
+  idTicket: number;
+  idConsumeDetails?: number;
+  status: number;
+  checked?: boolean;
 }

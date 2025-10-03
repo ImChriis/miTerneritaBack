@@ -32,8 +32,8 @@ export class ConsumeDetails {
 
   @ManyToOne(() => Payment, { nullable: false })
   @JoinColumn({ name: 'idPayment' })
-  payment: Payment;
+  idPayment: Payment;
 
-  @Column('int')
-  quantity: number;
+  @Column({ name: 'totalConsume', type: 'decimal', precision: 10, scale: 2 })
+  totalConsume: number;
 }

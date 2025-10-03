@@ -35,12 +35,12 @@ export class Payment {
   paymentMethod: 'USD' | 'BS';
 
   @Column({ length: 50 })
-  status: string; // e.g. 'pending', 'completed', 'cancelled'
+  status: string; // 'pending', 'completed', 'cancelled'
 
   @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
 
-  @OneToMany(() => ConsumeDetails, (consumeDetails) => consumeDetails.payment, {
+  @OneToMany(() => ConsumeDetails, (consumeDetails) => consumeDetails.idPayment, {
     cascade: true,
   })
   consumeDetails: ConsumeDetails[];

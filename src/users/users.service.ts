@@ -55,7 +55,7 @@ export class UsersService {
       }
     } else if (createUserDto.idRol) {
       role = await this.rolesRepository.findOne({
-        where: { id: createUserDto.idRol },
+        where: { idRol: createUserDto.idRol },
       });
       if (!role) {
         throw new BadRequestException('Rol no encontrado');
@@ -88,7 +88,7 @@ export class UsersService {
 
     if (updateUserDto.idRol) {
       const role = await this.rolesRepository.findOne({
-        where: { id: updateUserDto.idRol },
+        where: { idRol: updateUserDto.idRol },
       });
       if (!role) {
         throw new BadRequestException('Rol no encontrado');

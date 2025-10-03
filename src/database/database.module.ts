@@ -41,7 +41,7 @@ import { Configuration } from '../configuration/entities/configuration.entity';
           PaymentMethod,
           Configuration,
         ],
-        synchronize: false, // En producción debe ser false, en dev true si quieres auto crear tablas
+        synchronize: false, // En producción. debe ser false, en dev true si quieres auto crear tablas
         logging: true,
       }),
     }),

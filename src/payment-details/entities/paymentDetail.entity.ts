@@ -4,7 +4,6 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
-  Unique,
 } from 'typeorm';
 import { Payment } from '../../payments/entities/payment.entity';
 import { Event } from '../../events/entities/event.entity';
@@ -13,33 +12,54 @@ import { Ticket } from '../../tickets/entities/ticket.entity';
 import { ConsumeDetails } from '../../consumeDetails/entities/consumeDetail.entity';
 
 @Entity('PaymentDetails')
-@Unique(['payment', 'ticket'])
 export class PaymentDetails {
   @PrimaryGeneratedColumn({ name: 'idPaymentDetails' })
-  id: number;
+  idPaymentDetails: number;
 
-  @ManyToOne(() => Payment, (payment) => payment.paymentDetails, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(() => Payment)
   @JoinColumn({ name: 'idPayment' })
   payment: Payment;
 
-  @ManyToOne(() => Event, { eager: false })
-  @JoinColumn({ name: 'idEvent' })
-  event: Event;
+  @ManyToOne(() => Event)
+  @JoinColumn({ name: 'idEvents' })
+  idEvent: Event;
 
-  @ManyToOne(() => User, { eager: false })
-  @JoinColumn({ name: 'idUser ' })
-  user: User;
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'idUser' })
+  idUser: User;
 
-  @ManyToOne(() => Ticket, { eager: false })
+  @Column({ name: 'ticketNum', type: 'int', nullable: true }) // Nullable
+  ticketNum: number;
+
+  @Column({ name: 'precio', type: 'decimal', precision: 10, scale: 2 })
+  precio: number;
+
+  @Column({ name: 'totalBase', type: 'decimal', precision: 15, scale: 2, nullable: true }) //Nullable por impuesto x
+  totalBase: number;
+
+  @Column({ name: 'impuestoCalculado', type: 'decimal', precision: 15, scale: 2, nullable: true }) //Nullable por impuesto x
+  impuestoCalculado: number;
+
+  @Column({ name: 'total', type: 'decimal', precision: 15, scale: 2, nullable: true }) // Nullable por impuesto x
+  total: number;
+
+  @Column({ name: 'tasaDolarEvento', type: 'decimal', precision: 15, scale: 4, nullable: true }) // Nullable por impuesto x
+  tasaDolarEvento: number;
+
+  @Column({ name: 'totalDolarEvento', type: 'decimal', precision: 15, scale: 2, nullable: true }) // Nullable por impuesto x
+  totalDolarEvento: number;
+
+  @ManyToOne(() => Ticket)
   @JoinColumn({ name: 'idTicket' })
-  ticket: Ticket;
+  idTicket: Ticket;
 
   @ManyToOne(() => ConsumeDetails, { nullable: true })
   @JoinColumn({ name: 'idConsumeDetails' })
-  consumeDetails: ConsumeDetails;
+  idConsumeDetails: ConsumeDetails;
 
-  @Column({ default: false })
-  scanned: boolean;
+  @Column({ name: 'status', type: 'tinyint' })
+  status: number;
+
+  @Column({ name: 'checked', type: 'tinyint' })
+  checked: boolean;
 }

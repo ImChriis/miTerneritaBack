@@ -69,7 +69,7 @@ export class AuthService {
         password: hashedPassword,
         roleName: 'user',
         status: 1,
-        idRol: userRole.id,
+        idRol: userRole.idRol, 
       });
       return user;
     } catch (error) {

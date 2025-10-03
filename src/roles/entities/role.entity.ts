@@ -4,7 +4,7 @@ import { Entity, PrimaryGeneratedColumn, Column, Unique } from 'typeorm';
 @Unique(['name'])
 export class Role {
   @PrimaryGeneratedColumn({ name: 'idRol' })
-  id: number;
+  idRol: number;
 
   @Column({ length: 100 })
   name: string;
