@@ -30,7 +30,7 @@ class ConsumeItemDto {
   idFood?: number;
 
   @IsInt()
-  idDrink?: number;
+  idDrinks?: number;
 }
 
 export class CreatePaymentDto {
@@ -38,25 +38,73 @@ export class CreatePaymentDto {
   readonly idUser: number;
 
   @IsInt()
-  readonly idEvent: number;
+  readonly idEvents: number;
 
-  @IsNumber()
-  @Min(0)
-  readonly amountUSD: number;
-
-  @IsNumber()
-  @Min(0)
-  readonly amountBS: number;
-
-  @IsEnum(['USD', 'BS'])
-  readonly paymentMethod: 'USD' | 'BS';
+  @IsInt()
+  readonly idConsumeDetails?: number;
 
   @IsString()
-  readonly status: string; // e.g. 'pending'
+  readonly noDocumento?: string;
+
+  @IsString()
+  readonly date: string;
+
+  @IsString()
+  readonly time: string;
+
+  @IsNumber()
+  readonly totalBaseImponible?: number;
+
+  @IsNumber()
+  readonly impuestoBaseImponible?: number;
+
+  @IsNumber()
+  readonly totalExento?: number;
+
+  @IsNumber()
+  readonly descuento?: number;
+
+  @IsNumber()
+  readonly subtotalGeneral?: number;
+
+  @IsNumber()
+  readonly porcentajeIgtf?: number;
+
+  @IsNumber()
+  readonly totalIgtf?: number;
+
+  @IsNumber()
+  readonly impuesto?: number;
+
+  @IsNumber()
+  readonly porcentajeIva?: number;
+
+  @IsNumber()
+  readonly totalGeneral?: number;
+
+  @IsNumber()
+  readonly tasaDolar?: number;
+
+  @IsNumber()
+  readonly montoDolar?: number;
+
+  @IsString()
+  readonly comprobante?: string;
+
+  @IsString()
+  readonly banco?: string;
+
+  @IsString()
+  readonly referencia?: string;
+
+  @IsString()
+  readonly fechaTransferencia?: string;
+
+  @IsInt()
+  readonly status: number;
 
   @IsArray()
-  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => ConsumeItemDto)
-  readonly consumeItems: ConsumeItemDto[];
+  readonly consumeItems?: ConsumeItemDto[];
 }

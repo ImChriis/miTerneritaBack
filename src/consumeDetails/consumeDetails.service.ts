@@ -66,7 +66,7 @@ export class ConsumeDetailsService {
 
     const consumeDetails = this.consumeDetailsRepository.create({
       idFood: food ?? undefined,
-      idDrink: drink ?? undefined,
+      idDrinks: drink ?? undefined,
       idPayment: payment,
       totalConsume: (food ? food.price : 0) * quantity + (drink ? drink.price : 0) * quantity,
     });
@@ -76,14 +76,14 @@ export class ConsumeDetailsService {
 
   async findAll(): Promise<ConsumeDetails[]> {
     return this.consumeDetailsRepository.find({
-      relations: ['food', 'drink', 'payment'],
+  relations: ['idFood', 'idDrinks', 'idPayment'],
     });
   }
 
   async findByPayment(idPayment: number): Promise<ConsumeDetails[]> {
     return this.consumeDetailsRepository.find({
       where: { idPayment: { idPayment: idPayment } },
-      relations: ['food', 'drink', 'payment'],
+  relations: ['idFood', 'idDrinks', 'idPayment'],
     });
   }
 

@@ -18,16 +18,14 @@ export class ConsumeDetails {
   @JoinColumn({ name: 'idFood' })
   idFood: Food;
 
-  @ManyToOne(() => Food, { nullable: true })
-  @JoinColumn({ name: 'foodAmount' })
+  @Column({ name: 'foodAmount', type: 'int', default: 0 })
   foodAmount: number;
 
   @ManyToOne(() => Drink, { nullable: true })
-  @JoinColumn({ name: 'idDrink' })
-  idDrink: Drink;
+  @JoinColumn({ name: 'idDrinks' })
+  idDrinks: Drink;
 
-  @ManyToOne(() => Drink, { nullable: true })
-  @JoinColumn({ name: 'drinksAmount' })
+  @Column({ name: 'drinksAmount', type: 'int', default: 0 })
   drinksAmount: number;
 
   @ManyToOne(() => Payment, { nullable: false })
