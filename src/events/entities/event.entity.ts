@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Ticket } from '../../tickets/entities/ticket.entity';
 
 @Entity('events')
 export class Event {
@@ -31,4 +32,7 @@ export class Event {
 
   @Column('tinyint')
   status: number;
+
+  @OneToMany(() => Ticket, (ticket) => ticket.event)
+  tickets: Ticket[];
 }

@@ -25,5 +25,5 @@ export class UpdateTicketDto {
 
   @IsOptional()
   @IsInt()
-  readonly idEvent?: number;
+  readonly idEvents?: number;
 }

@@ -32,7 +32,7 @@ export class ConsumeDetailsService {
   ): Promise<ConsumeDetails> {
     const { idFood, idDrink, idPayment, quantity } = createConsumeDetailDto;
 
-    // Ahora es completamente opcional tener idFood o idDrink
+    // Es completamente opcional tener idFood o idDrink
 
     if (idFood && idDrink) {
       throw new BadRequestException(

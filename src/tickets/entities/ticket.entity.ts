@@ -7,21 +7,21 @@ import {
 } from 'typeorm';
 import { Event } from '../../events/entities/event.entity';
 
-@Entity('Ticket')
+@Entity('ticket')
 export class Ticket {
-  @PrimaryGeneratedColumn({ name: 'idTicket' })
+  @PrimaryGeneratedColumn()
   idTicket: number;
 
-  @Column({ length: 100 })
+  @Column({ length: 150 })
   name: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
-  @Column('tinyint')
-  status: number;
-
-  @ManyToOne(() => Event, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Event, (event) => event.tickets)
   @JoinColumn({ name: 'idEvents' })
   event: Event;
+
+  @Column({ type: 'tinyint', default: 1 })
+  status: number;
 }

@@ -5,22 +5,21 @@ import {
   Min,
   Max,
   IsInt,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateTicketDto {
   @IsString()
-  @IsNotEmpty()
-  readonly name: string;
+  name: string;
 
   @IsNumber()
-  @Min(0)
-  readonly price: number;
+  price: number;
 
+  @IsOptional()
   @IsInt()
-  @Min(0)
-  @Max(1)
-  readonly status: number;
+  idEvents?: number;
 
+  @IsOptional()
   @IsInt()
-  readonly idEvent: number;
+  status?: number;
 }

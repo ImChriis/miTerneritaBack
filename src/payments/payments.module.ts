@@ -10,7 +10,7 @@ import { ConsumeDetailsModule } from '../consumeDetails/consumeDetails.module';
 import { TicketsModule } from '../tickets/tickets.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule } from '@nestjs/config';
-import { PaymentDetailsModule } from 'src/payment-details/payment-details.module';
+import { PaymentDetailsModule } from '../payment-details/payment-details.module';
 
 @Module({
   imports: [
