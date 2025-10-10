@@ -30,11 +30,11 @@ export class ConsumeDetailsService {
   async create(
     createConsumeDetailDto: CreateConsumeDetailDto,
   ): Promise<ConsumeDetails> {
-    const { idFood, idDrink, idPayment, quantity } = createConsumeDetailDto;
+    const { idFood, idDrinks, idPayment, totalConsume } = createConsumeDetailDto;
 
     // Es completamente opcional tener idFood o idDrink
 
-    if (idFood && idDrink) {
+    if (idFood && idDrinks) {
       throw new BadRequestException(
         'No puede especificar idFood y idDrink al mismo tiempo',
       );
@@ -57,8 +57,8 @@ export class ConsumeDetailsService {
       }
     }
 
-    if (idDrink) {
-      drink = await this.drinkRepository.findOne({ where: { idDrinks: idDrink } });
+    if (idDrinks) {
+      drink = await this.drinkRepository.findOne({ where: { idDrinks: idDrinks } });
       if (!drink) {
         throw new NotFoundException('Bebida no encontrada');
       }
@@ -68,7 +68,7 @@ export class ConsumeDetailsService {
       idFood: food ?? undefined,
       idDrinks: drink ?? undefined,
       idPayment: payment,
-      totalConsume: (food ? food.price : 0) * quantity + (drink ? drink.price : 0) * quantity,
+      totalConsume: (food ? food.price : 0) * totalConsume + (drink ? drink.price : 0) * totalConsume,
     });
 
     return this.consumeDetailsRepository.save(consumeDetails);

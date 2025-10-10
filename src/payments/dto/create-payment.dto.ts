@@ -16,11 +16,19 @@ class ConsumeItemDto {
 
   @IsInt()
   @Min(1)
-  quantity: number;
+  totalConsume: number;
 
   @IsNumber()
   @Min(0)
   price: number;
+
+  @IsInt()
+  @Min(1)
+  foodAmount: number;
+
+  @IsInt()
+  @Min(1)
+  drinksAmount: number;
 
   // IDs for each type
   @IsInt()

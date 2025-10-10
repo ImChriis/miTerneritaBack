@@ -124,8 +124,10 @@ export class PaymentsService {
             await this.consumeDetailsService.create({
               idPayment: savedPayment.idPayment,
               idFood: item.idFood,
-              idDrink: item.idDrinks,
-              quantity: item.quantity,
+              idDrinks: item.idDrinks,
+              foodAmount: item.foodAmount,
+              drinksAmount: item.drinksAmount,
+              totalConsume: item.totalConsume,  
             });
           }
         }

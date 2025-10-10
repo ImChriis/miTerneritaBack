@@ -1,18 +1,27 @@
-import { IsInt, Min, IsOptional, ValidateIf } from 'class-validator';
+import { IsInt, Min, IsOptional, ValidateIf, IsNumber, IsNotEmpty} from 'class-validator';
 
 export class CreateConsumeDetailDto {
   @IsOptional()
-  @IsInt()
-  readonly idFood?: number;
+  @IsNumber()
+  idFood?: number;
 
   @IsOptional()
-  @IsInt()
-  readonly idDrink?: number;
+  @IsNumber()
+  foodAmount?: number;
 
-  @IsInt()
-  readonly idPayment: number;
+  @IsOptional()
+  @IsNumber()
+  idDrinks?: number;
 
-  @IsInt()
-  @Min(1)
-  readonly quantity: number;
+  @IsOptional()
+  @IsNumber()
+  drinksAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  idPayment?: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  totalConsume: number;
 }

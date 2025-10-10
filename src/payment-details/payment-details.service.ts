@@ -137,7 +137,7 @@ export class PaymentDetailsService {
     // Cargar PaymentDetails con las relaciones necesarias para el correo
     const paymentDetails = await this.paymentDetailsRepository.findOne({
       where: { idPaymentDetails: id },
-      relations: ['idUser', 'idEvent', 'idTicket', 'idPayment'], // Asegúrate de cargar estas relaciones
+      relations: ['idUser', 'idEvent', 'idTicket', 'payment'], // Asegúrate de cargar estas relaciones
     });
     if (!paymentDetails) {
       throw new NotFoundException('Detalle de pago no encontrado');
