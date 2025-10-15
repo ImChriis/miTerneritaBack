@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
-import * as QRCode from 'qrcode'; // Necesitarás instalar 'qrcode'
-import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity'; // Importa la entidad
+import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity';
 
 @Injectable()
 export class MailService {
@@ -9,24 +8,10 @@ export class MailService {
 
   constructor(private mailerService: MailerService) {}
 
-  // Método genérico para enviar correos (ya lo tenías, lo mantengo)
-  async sendEmail(to: string, subject: string, text: string, html?: string) {
-    try {
-      await this.mailerService.sendMail({
-        to,
-        subject,
-        text,
-        html,
-      });
-      this.logger.log(`Email enviado a ${to} con asunto: ${subject}`);
-    } catch (error) {
-      this.logger.error(`Error enviando email a ${to}:`, error.stack);
-      // Puedes decidir si relanzar el error o solo loguearlo
-      // throw new Error('Fallo al enviar email'); 
-    }
-  }
-
-  // Nuevo método para enviar confirmación de ticket escaneado
+  /**
+   * Envía un correo de confirmación cuando el ticket ha sido escaneado.
+   * @param paymentDetail Detalle del pago escaneado.
+   */
   async sendTicketScannedConfirmation(paymentDetail: PaymentDetails) {
     const userEmail = paymentDetail.idUser.email;
     const userName = paymentDetail.idUser.name;
@@ -35,38 +20,28 @@ export class MailService {
     const paymentId = paymentDetail.payment.idPayment;
     const paymentDetailId = paymentDetail.idPaymentDetails;
 
-    // Generar QR Code con información relevante del ticket escaneado
+    // Genera el QR usando el API externo (más simple y configurable)
     const qrData = `PaymentDetailID:${paymentDetailId};PaymentID:${paymentId};User:${paymentDetail.idUser.id};Event:${paymentDetail.idEvent.idEvents};Ticket:${paymentDetail.idTicket.idTicket};Scanned:true`;
-    let qrCodeImage: string;
-    try {
-      qrCodeImage = await QRCode.toDataURL(qrData);
-    } catch (qrError) {
-      this.logger.error('Error generando QR Code para confirmación de escaneo:', qrError.stack);
-      qrCodeImage = ''; // En caso de error, no incluir QR
-    }
-
-    const subject = `¡Tu ticket para ${eventName} ha sido escaneado!`;
-    const templateName = 'ticket-scanned-confirmation'; // Nombre de la plantilla Handlebars
+    const qrCodeImage = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
 
     try {
       await this.mailerService.sendMail({
         to: userEmail,
-        subject: subject,
-        template: templateName,
+        subject: `¡Tu ticket para ${eventName} ha sido escaneado!`,
+        template: 'ticket-scanned-confirmation',
         context: {
-          userName: userName,
-          eventName: eventName,
-          ticketName: ticketName,
-          paymentId: paymentId,
-          paymentDetailId: paymentDetailId,
-          qrCodeImage: qrCodeImage, // Pasar la imagen QR a la plantilla
-          // Puedes añadir más datos si los necesitas en la plantilla
+          userName: userName || 'usuario',
+          eventName: eventName || 'evento',
+          ticketName: ticketName || 'ticket',
+          paymentId: paymentId || 'N/A',
+          paymentDetailId: paymentDetailId || 'N/A',
+          qrCodeImage,
         },
       });
-      this.logger.log(`Correo de confirmación de ticket escaneado enviado a ${userEmail} para PaymentDetail ID: ${paymentDetailId}`);
+      this.logger.log(`Correo de confirmación enviado a ${userEmail} para PaymentDetail ID: ${paymentDetailId}`);
     } catch (error) {
-      this.logger.error(`Error enviando correo de confirmación de escaneo a ${userEmail}:`, error.stack);
-      // No relanzar el error para no bloquear la actualización del estado del ticket
+      this.logger.error(`Error enviando correo de confirmación a ${userEmail}:`, error.stack);
+      // No relanzar el error para no bloquear la lógica de negocio
     }
   }
 }

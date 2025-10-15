@@ -15,7 +15,8 @@ import { CodeModule } from './code/code.module';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule } from '@nestjs/config';
-import { MailService } from './mail/mail.service';  
+import { MailService } from './mail/mail.service';
+import { MailController } from './mail/mail.controller'; 
 
 @Module({
   imports: [ ConfigModule.forRoot({ isGlobal: true }),
@@ -49,7 +50,7 @@ import { MailService } from './mail/mail.service';
       //
     }),
   ],
-  controllers: [],
+  controllers: [MailController],
   providers: [MailService],
   exports: [MailService],
 })

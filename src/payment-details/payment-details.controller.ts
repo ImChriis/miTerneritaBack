@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   ParseIntPipe,
+  Patch,
 } from '@nestjs/common';
 import { PaymentDetailsService } from './payment-details.service';
 import { CreatePaymentDetailsDto } from './dto/create-payment-detail.dto';
@@ -26,7 +27,7 @@ export class PaymentDetailsController {
     return this.paymentDetailsService.create(createPaymentDetailsDto);
   }
 
-  @Put(':id/status')
+  @Patch(':id/status')
   @Roles('admin')
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,

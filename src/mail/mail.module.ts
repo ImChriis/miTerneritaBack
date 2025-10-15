@@ -1,32 +1,35 @@
 import { Module } from '@nestjs/common';
-import { MailService } from './mail.service';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { MailService } from './mail.service';
+import { join } from 'path';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    MailerModule.forRoot({
+    ConfigModule.forRoot({ isGlobal: true }),
+    MailerModule.forRoot({ 
       transport: {
         host: process.env.MAIL_HOST,
         port: Number(process.env.MAIL_PORT),
-        secure: false,
         auth: {
           user: process.env.MAIL_USER,
           pass: process.env.MAIL_PASSWORD,
         },
+        secure: false, // true for 465, false for other ports
       },
       defaults: {
-        from: `\"Mi Ternerita House\" <${process.env.MAIL_FROM}>`,
+        from: `"No Reply" <${process.env.MAIL_USER}>`,
       },
-      /*template: {
-        dir: join(process.cwd(), 'src', 'mail', 'templates'),
+      template: {
+        dir: join(__dirname, 'templates'),
         adapter: new HandlebarsAdapter(),
         options: {
           strict: true,
         },
-      },*/
+      },
     }),
   ],
-  controllers: [],
   providers: [MailService],
   exports: [MailService],
 })

@@ -1,49 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Confirmación de Ticket</title>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
-    .header { background-color: #f4f4f4; padding: 10px 20px; text-align: center; border-bottom: 1px solid #ddd; }
-    .content { padding: 20px; }
-    .footer { background-color: #f4f4f4; padding: 10px 20px; text-align: center; border-top: 1px solid #ddd; font-size: 0.9em; color: #777; }
-    .qr-code { text-align: center; margin-top: 20px; }
-    .qr-code img { max-width: 200px; height: auto; border: 1px solid #eee; padding: 5px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h2>Confirmación de su Ticket</h2>
-    </div>
-    <div class="content">
-      <p>Hola <strong>{{userName}}</strong>,</p>
-      <p>Queremos informarte que tu ticket para el evento <strong>"{{eventName}}"</strong> ha sido aprobado exitosamente.</p>
-      <p>Detalles del ticket:</p>
-      <ul>
-        <li><strong>Evento:</strong> {{eventName}}</li>
-        <li><strong>Ticket:</strong> {{ticketName}}</li>
-        <li><strong>ID de Pago:</strong> {{paymentId}}</li>
-        <li><strong>ID de Detalle de Pago:</strong> {{paymentDetailId}}</li>
-      </ul>
-      <p>¡Disfruta del evento!</p>
-      
-      {{#if qrCodeImage}}
-      <div class="qr-code">
-        <p>Aquí está el código QR de tu ticket aprobado:</p>
-        <img src="{{qrCodeImage}}" alt="QR Code del Ticket">
-      </div>
-      {{/if}}
-      
-      <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
-    </div>
-    <div class="footer">
-      <p>Saludos cordiales,</p>
-      <p>Mi Ternerita House</p>
-      <p>vitalsense2025@gmail.com</p>
-    </div>
-  </div>
-</body>
-</html>
+<p>Hola {{userName}},</p>
+<p>Tu ticket <b>{{ticketName}}</b> para el evento <b>{{eventName}}</b> ha sido escaneado y verificado.</p>
+<p>ID de pago: {{paymentId}}</p>
+<p>ID de detalle de pago: {{paymentDetailId}}</p>
+<p>
+  <img src="{{qrCodeImage}}" alt="QR de confirmación" />
+</p>
+<p>¡Gracias por tu compra!</p>

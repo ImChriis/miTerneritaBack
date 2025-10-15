@@ -130,42 +130,40 @@ export class PaymentDetailsService {
     return savedPaymentDetails;
   }
 
-  async updateStatus(
-    id: number,
-    updateStatusDto: UpdatePaymentDetailsStatusDto,
-  ): Promise<PaymentDetails> {
-    // Cargar PaymentDetails con las relaciones necesarias para el correo
-    const paymentDetails = await this.paymentDetailsRepository.findOne({
-      where: { idPaymentDetails: id },
-      relations: ['idUser', 'idEvent', 'idTicket', 'payment'], // Asegúrate de cargar estas relaciones
-    });
-    if (!paymentDetails) {
-      throw new NotFoundException('Detalle de pago no encontrado');
-    }
-
-    // Solo enviar correo si el estado cambia a 'scanned: true' y antes no lo estaba
-    const shouldSendEmail =
-      !paymentDetails.checked && updateStatusDto.checked === true;
-
-    paymentDetails.checked = updateStatusDto.checked;
-    const updatedPaymentDetails = await this.paymentDetailsRepository.save(
-      paymentDetails,
-    );
-
-    if (shouldSendEmail) {
-      this.logger.log(
-        `PaymentDetail ID ${id} actualizado a checked: true. Enviando correo...`,
-      );
-      // Asegúrate de que las propiedades de paymentDetail sean accesibles como se espera en MailService
-      // Si MailService espera 'user', 'event', 'ticket', 'payment' directamente,
-      // y tus relaciones son 'idUser', 'idEvent', 'idTicket', 'idPayment',
-      // podrías necesitar un mapeo o ajustar la entidad PaymentDetails para usar nombres más directos.
-      // Por ahora, asumo que MailService puede manejar 'idUser.email', 'idEvent.name', etc.
-      await this.mailService.sendTicketScannedConfirmation(updatedPaymentDetails);
-    }
-
-    return updatedPaymentDetails;
+  // ...existing code...
+async updateStatus(
+  id: number,
+  updateStatusDto: UpdatePaymentDetailsStatusDto,
+): Promise<PaymentDetails> {
+  const paymentDetails = await this.paymentDetailsRepository.findOne({
+    where: { idPaymentDetails: id },
+    relations: ['idUser', 'idEvent', 'idTicket', 'payment'],
+  });
+  if (!paymentDetails) {
+    throw new NotFoundException('Detalle de pago no encontrado');
   }
+
+  // LOG para depuración
+  this.logger.log(
+    `checked antes: ${paymentDetails.checked} (tipo: ${typeof paymentDetails.checked}), checked nuevo: ${updateStatusDto.checked} (tipo: ${typeof updateStatusDto.checked})`
+  );
+
+  const shouldSendEmail =
+    !paymentDetails.checked && updateStatusDto.checked === true;
+
+  paymentDetails.checked = updateStatusDto.checked;
+  const updatedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
+
+  if (shouldSendEmail) {
+    this.logger.log(
+      `PaymentDetail ID ${id} actualizado a checked: true. Enviando correo...`,
+    );
+    await this.mailService.sendTicketScannedConfirmation(updatedPaymentDetails);
+  }
+
+  return updatedPaymentDetails;
+}
+// ...existing code...
 
   async findAll(): Promise<PaymentDetails[]> {
     return this.paymentDetailsRepository.find({
