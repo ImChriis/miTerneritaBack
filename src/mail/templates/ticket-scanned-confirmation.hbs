@@ -1,8 +1,80 @@
-<p>Hola {{userName}},</p>
-<p>Tu ticket <b>{{ticketName}}</b> para el evento <b>{{eventName}}</b> ha sido escaneado y verificado.</p>
-<p>ID de pago: {{paymentId}}</p>
-<p>ID de detalle de pago: {{paymentDetailId}}</p>
-<p>
-  <img src="{{qrCodeImage}}" alt="QR de confirmación" />
-</p>
-<p>¡Gracias por tu compra!</p>
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width"/>
+    <title>Confirmación de entrada escaneada</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#333;">
+    <table role="presentation" width="100%" style="border-collapse:collapse;">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <table role="presentation" style="width:600px;max-width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e6e9ee;">
+            <tr>
+              <td style="background:#0b63d3;color:#fff;padding:18px 24px;">
+                <h1 style="margin:0;font-size:20px;">Confirmación de entrada</h1>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:20px 24px;">
+                <p style="margin:0 0 12px 0;font-size:15px;">Hola {{userName}},</p>
+
+                <p style="margin:0 0 18px 0;font-size:14px;line-height:1.5;color:#555;">
+                  Hemos verificado la entrada vinculada a tu compra. A continuación encontrarás los detalles de la transacción y tu comprobante QR.
+                </p>
+
+                <table role="presentation" width="100%" style="margin:18px 0 16px 0;border-collapse:collapse;">
+                  <tr>
+                    <td style="padding:12px;background:#f7f9fc;border-radius:6px;border:1px solid #eef2f7;">
+                      <strong style="display:block;font-size:13px;margin-bottom:6px;color:#0b63d3;">Evento</strong>
+                      <div style="font-size:14px;color:#222;">{{eventName}}</div>
+                    </td>
+                    <td style="width:12px;"></td>
+                    <td style="padding:12px;background:#f7f9fc;border-radius:6px;border:1px solid #eef2f7;">
+                      <strong style="display:block;font-size:13px;margin-bottom:6px;color:#0b63d3;">Entrada</strong>
+                      <div style="font-size:14px;color:#222;">{{ticketName}}</div>
+                    </td>
+                  </tr>
+                </table>
+
+                <table role="presentation" width="100%" style="margin:8px 0 18px 0;border-collapse:collapse;">
+                  <tr>
+                    <td style="font-size:13px;color:#666;padding:8px 0;">ID de pago:</td>
+                    <td style="font-size:14px;color:#222;padding:8px 0;"><strong>{{paymentId}}</strong></td>
+                  </tr>
+                  <tr>
+                    <td style="font-size:13px;color:#666;padding:8px 0;">ID detalle:</td>
+                    <td style="font-size:14px;color:#222;padding:8px 0;"><strong>{{paymentDetailId}}</strong></td>
+                  </tr>
+                </table>
+
+                <div style="text-align:center;margin:20px 0;">
+                  <img src="{{qrCodeImage}}" alt="Código QR de confirmación" style="max-width:200px;border:1px solid #e6e9ee;border-radius:6px;padding:6px;background:#fff;" />
+                </div>
+
+                <p style="font-size:13px;color:#666;margin:12px 0 0 0;">
+                  Conserva este correo como comprobante. Si necesitas asistencia, responde a este mensaje.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="background:#fafbfd;padding:14px 24px;border-top:1px solid #eef2f7;text-align:center;">
+                <small style="color:#8a93a6;font-size:12px;">
+                  © {{currentYear}} MiTernerita. Todos los derechos reservados.
+                </small>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Helpers for fallback values -->
+    <script type="text/plain">
+      {{!-- provide a year helper if not set from context --}}
+      {{!-- In case the mailer doesn't pass currentYear, user can set it in context: currentYear: new Date().getFullYear() --}}
+    </script>
+  </body>
+</html>

@@ -22,7 +22,10 @@ import { ConfigModule } from '@nestjs/config';
         from: `"No Reply" <${process.env.MAIL_USER}>`,
       },
       template: {
-        dir: join(__dirname, 'templates'),
+        dir:
+          process.env.NODE_ENV === 'production'
+            ? join(__dirname, 'templates') // cuando corre desde dist/mail
+            : join(process.cwd(), 'src', 'mail', 'templates'), // en dev lee desde src
         adapter: new HandlebarsAdapter(),
         options: {
           strict: true,

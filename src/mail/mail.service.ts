@@ -36,6 +36,7 @@ export class MailService {
           paymentId: paymentId || 'N/A',
           paymentDetailId: paymentDetailId || 'N/A',
           qrCodeImage,
+          currentYear: new Date().getFullYear(),
         },
       });
       this.logger.log(`Correo de confirmación enviado a ${userEmail} para PaymentDetail ID: ${paymentDetailId}`);
