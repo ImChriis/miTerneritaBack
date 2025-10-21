@@ -27,23 +27,4 @@ export class RolesService {
     return this.rolesRepository.findOne({ where: { idRol: id } });
   }
 
-  async create(createRoleDto: CreateRoleDto): Promise<Role> {
-    const existing = await this.findByName(createRoleDto.name);
-    if (existing) {
-      throw new BadRequestException('El rol ya existe');
-    }
-    const role = this.rolesRepository.create(createRoleDto);
-    return this.rolesRepository.save(role);
-  }
-
-  // Método para inicializar roles 'user' y 'admin' si no existen
-  async initializeRoles(): Promise<void> {
-    const roles = ['user', 'admin'];
-    for (const roleName of roles) {
-      const exists = await this.findByName(roleName);
-      if (!exists) {
-        await this.create({ name: roleName });
-      }
-    }
-  }
 }

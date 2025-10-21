@@ -14,11 +14,6 @@ import { CreateRoleDto } from './dto/create-role.dto';
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
-  @Post()
-  create(@Body() createRoleDto: CreateRoleDto) {
-    return this.rolesService.create(createRoleDto);
-  }
-
   @Get()
   findAll() {
     return this.rolesService.findAll();

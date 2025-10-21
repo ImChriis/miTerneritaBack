@@ -12,7 +12,6 @@ import { Event } from '../events/entities/event.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentDetailsService } from '../payment-details/payment-details.service';
 import { ConsumeDetailsService } from '../consumeDetails/consumeDetails.service';
-import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import * as QRCode from 'qrcode';
 
@@ -136,37 +135,6 @@ export class PaymentsService {
     });
   }
 
-  async updateStatus(
-    id: number,
-    updatePaymentStatusDto: UpdatePaymentStatusDto,
-  ): Promise<Payment> {
-    const payment = await this.paymentsRepository.findOne({
-      where: { idPayment: id },
-      relations: ['idUser', 'idEvents'],
-    });
-    if (!payment) {
-      throw new NotFoundException('Pago no encontrado');
-    }
-    if (payment.status === Number(updatePaymentStatusDto.status)) {
-      throw new BadRequestException('El estado es el mismo que el actual');
-    }
-    const oldStatus = payment.status;
-    payment.status = Number(updatePaymentStatusDto.status);
-    const updatedPayment = await this.paymentsRepository.save(payment);
-    // Enviar correo solo si el estado cambia a 'completed' (por ejemplo, status === 1)
-    // Ajusta el valor según tu lógica de status
-    if (oldStatus !== 1 && updatedPayment.status === 1) {
-      this.logger.log(
-        `Payment ID ${id} actualizado a completed. Enviando correo de confirmación...`,
-      );
-      await this.sendPaymentConfirmationEmail(
-        updatedPayment.idUser.email,
-        updatedPayment,
-      );
-    }
-    return updatedPayment;
-  }
-
   async findOne(id: number): Promise<Payment> {
     const payment = await this.paymentsRepository.findOne({
       where: { idPayment: id },
@@ -176,67 +144,6 @@ export class PaymentsService {
       throw new NotFoundException('Pago no encontrado');
     }
     return payment;
-  }
-
-  private async sendPaymentConfirmationEmail(email: string, payment: Payment) {
-    try {
-      // Cargar detalles relacionados
-      const paymentWithDetails = await this.paymentsRepository.findOne({
-        where: { idPayment: payment.idPayment },
-        relations: ['idUser', 'idEvents', 'consumeDetails', 'paymentDetails'],
-      });
-  const qrData = `PaymentID:${payment.idPayment};User:${payment.idUser?.id};Event:${payment.idEvents?.idEvents};Status:${payment.status}`;
-      const qrCodeImage = await QRCode.toDataURL(qrData);
-
-      // Construir detalles de ítems comprados
-      let itemsHtml = '<ul>';
-      if (paymentWithDetails) {
-        if (
-          paymentWithDetails.paymentDetails &&
-          paymentWithDetails.paymentDetails.length > 0
-        ) {
-          for (const detail of paymentWithDetails.paymentDetails) {
-            // Acceder a idTicket de la entidad PaymentDetails
-            itemsHtml += `<li>Ticket: ${detail.idTicket?.name || 'N/A'} - Cantidad: ${
-              (detail as any).quantity || 1
-            } - Precio: $${(detail as any).price || 'N/A'}</li>`;
-          }
-        }
-        if (
-          paymentWithDetails.consumeDetails &&
-          paymentWithDetails.consumeDetails.length > 0
-        ) {
-          for (const consume of paymentWithDetails.consumeDetails) {
-            if (consume.idFood) {
-              itemsHtml += `<li>Food: ${consume.idFood.description} - Cantidad: ${consume.totalConsume}</li>`;
-            }
-            if (consume.idDrinks) {
-              itemsHtml += `<li>Drink: ${consume.idDrinks.description} - Cantidad: ${consume.totalConsume}</li>`;
-            }
-          }
-        }
-      }
-      itemsHtml += '</ul>';
-
-      await this.mailerService.sendMail({
-        to: email,
-        subject: 'Confirmación de Pago',
-        html: `<p>Gracias por su pago. Aquí está su código QR:</p><img src="${qrCodeImage}" alt="QR Code" /><h3>Detalles de la compra:</h3>${itemsHtml}`,
-      });
-
-      this.logger.log(`Correo de confirmación enviado a ${email}`);
-    } catch (error) {
-      this.logger.error('Error enviando correo de confirmación', error);
-      // No lanzar error para no afectar flujo principal
-    }
-  }
-
-  // Método para actualizar tasa de cambio (solo admin)
-  async updateExchangeRate(newRate: number): Promise<void> {
-    // Aquí se podría guardar en una tabla o configuración
-    // Por simplicidad, asumimos que se guarda en una tabla llamada ExchangeRate
-    // Implementar según necesidad
-    this.logger.log(`Tasa de cambio actualizada a ${newRate}`);
   }
 
   async findAll(): Promise<Payment[]> {
