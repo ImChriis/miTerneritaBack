@@ -143,10 +143,6 @@ async updateStatus(
     throw new NotFoundException('Detalle de pago no encontrado');
   }
 
-  // LOG para depuración
-  this.logger.log(
-    `checked antes: ${paymentDetails.checked} (tipo: ${typeof paymentDetails.checked}), checked nuevo: ${updateStatusDto.checked} (tipo: ${typeof updateStatusDto.checked})`
-  );
 
   const shouldSendEmail =
     !paymentDetails.checked && updateStatusDto.checked === true;
@@ -155,9 +151,6 @@ async updateStatus(
   const updatedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
 
   if (shouldSendEmail) {
-    this.logger.log(
-      `PaymentDetail ID ${id} actualizado a checked: true. Enviando correo...`,
-    );
     await this.mailService.sendTicketScannedConfirmation(updatedPaymentDetails);
   }
 
