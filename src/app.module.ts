@@ -17,6 +17,8 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule } from '@nestjs/config';
 import { MailService } from './mail/mail.service';
 import { MailController } from './mail/mail.controller'; 
+import { ServeStaticModule } from "@nestjs/serve-static";
+import { join } from "path";
 
 @Module({
   imports: [ ConfigModule.forRoot({ isGlobal: true }),
@@ -49,6 +51,10 @@ import { MailController } from './mail/mail.controller';
       },
       //
     }),
+  ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'assets'),
+      serveRoot: '/assets',
+  })
   ],
   controllers: [MailController],
   providers: [MailService],
