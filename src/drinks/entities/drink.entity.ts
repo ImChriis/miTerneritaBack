@@ -11,6 +11,9 @@ export class Drink {
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
-  @Column('tinyint')
+  @Column('tinyint', { nullable: true })
   status: number;
+
+  @Column({ length: 255, nullable: true })
+  image: string;
 }

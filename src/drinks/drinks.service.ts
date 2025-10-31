@@ -13,9 +13,14 @@ export class DrinksService {
   ) {}
 
   async create(createDrinkDto: CreateDrinkDto): Promise<Drink> {
-    const drink = this.drinksRepository.create(createDrinkDto);
-    return this.drinksRepository.save(drink);
-  }
+  const drink = this.drinksRepository.create({
+    description: createDrinkDto.description,
+    price: createDrinkDto.price,
+    status: 1, // o createDrinkDto.status si lo envías desde el frontend
+    image: createDrinkDto.image, // aquí ya viene el nombre del archivo subido
+  });
+  return this.drinksRepository.save(drink);
+}
 
   async findAll(): Promise<Drink[]> {
     return this.drinksRepository.find();

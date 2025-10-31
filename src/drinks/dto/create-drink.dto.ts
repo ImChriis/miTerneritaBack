@@ -5,12 +5,13 @@ import {
   Min,
   Max,
   IsInt,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateDrinkDto {
   @IsString()
   @IsNotEmpty()
-  readonly name: string;
+  readonly description: string;
 
   @IsNumber()
   @Min(0)
@@ -20,4 +21,8 @@ export class CreateDrinkDto {
   @Min(0)
   @Max(1)
   readonly status: number;
+
+  @IsString()
+  @IsOptional()
+  readonly image?: string;
 }

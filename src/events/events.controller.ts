@@ -9,6 +9,9 @@ import {
   UseGuards,
   ParseIntPipe,
 } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { diskStorage } from 'multer';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -33,18 +36,75 @@ export class EventsController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  async create(@Body() createEventDto: CreateEventDto) {
-    return this.eventsService.create(createEventDto);
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'flyer', maxCount: 1 },
+      { name: 'image1', maxCount: 1 },
+      { name: 'image2', maxCount: 1 },
+      { name: 'image3', maxCount: 1 },
+    ], {
+      storage: diskStorage({
+        destination: './assets',
+        filename: (req, file, cb) => {
+          cb(null, file.originalname);
+        },
+      }),
+    }),
+  )
+  async create(
+    @Body() createEventDto: CreateEventDto,
+    @UploadedFiles() files: {
+      flyer?: Express.Multer.File[],
+      image1?: Express.Multer.File[],
+      image2?: Express.Multer.File[],
+      image3?: Express.Multer.File[],
+    },
+  ) {
+    return this.eventsService.create({
+      ...createEventDto,
+      flyer: files.flyer?.[0]?.originalname,
+      image1: files.image1?.[0]?.originalname,
+      image2: files.image2?.[0]?.originalname,
+      image3: files.image3?.[0]?.originalname,
+    });
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'flyer', maxCount: 1 },
+      { name: 'image1', maxCount: 1 },
+      { name: 'image2', maxCount: 1 },
+      { name: 'image3', maxCount: 1 },
+    ], {
+      storage: diskStorage({
+        destination: './assets',
+        filename: (req, file, cb) => {
+          cb(null, file.originalname);
+        },
+      }),
+    }),
+  )
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateEventDto: UpdateEventDto,
+    @UploadedFiles() files: {
+      flyer?: Express.Multer.File[],
+      image1?: Express.Multer.File[],
+      image2?: Express.Multer.File[],
+      image3?: Express.Multer.File[],
+    },
   ) {
-    return this.eventsService.update(id, updateEventDto);
+    const updateData = {
+      ...updateEventDto,
+      ...(files.flyer && { flyer: files.flyer[0].originalname }),
+      ...(files.image1 && { image1: files.image1[0].originalname }),
+      ...(files.image2 && { image2: files.image2[0].originalname }),
+      ...(files.image3 && { image3: files.image3[0].originalname }),
+    };
+    return this.eventsService.update(id, updateData);
   }
 
   @Delete(':id')

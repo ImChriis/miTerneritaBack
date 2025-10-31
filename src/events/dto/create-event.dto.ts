@@ -34,13 +34,19 @@ export class CreateEventDto {
 
   @IsString()
   @IsOptional()
-  @Matches(/\.webp$/i, { message: 'La imagen debe ser formato .webp' })
-  readonly imageL?: string;
+  readonly flyer?: string;
 
   @IsString()
   @IsOptional()
-  @Matches(/\.webp$/i, { message: 'La imagen debe ser formato .webp' })
-  readonly imageS?: string;
+  readonly image1?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly image2?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly image3?: string;
 
   @IsInt()
   readonly status: number;

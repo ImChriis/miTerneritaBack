@@ -13,7 +13,12 @@ export class FoodService {
   ) {}
 
   async create(createFoodDto: CreateFoodDto): Promise<Food> {
-    const food = this.foodRepository.create(createFoodDto);
+    const food = this.foodRepository.create({
+      description: createFoodDto.description,
+      price: createFoodDto.price,
+      status: 1, // o createFoodDto.status si lo envías desde el frontend
+      image: createFoodDto.image, // aquí ya viene el nombre del archivo subido
+    });
     return this.foodRepository.save(food);
   }
 

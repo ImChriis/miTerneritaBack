@@ -10,7 +10,7 @@ import {
 export class UpdateDrinkDto {
   @IsOptional()
   @IsString()
-  readonly name?: string;
+  readonly description?: string;
 
   @IsOptional()
   @IsNumber()
@@ -22,4 +22,8 @@ export class UpdateDrinkDto {
   @Min(0)
   @Max(1)
   readonly status?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly image?: string;
 }

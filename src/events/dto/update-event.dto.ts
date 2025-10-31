@@ -33,15 +33,21 @@ export class UpdateEventDto {
   @Min(1)
   readonly capacity?: number;
 
-  @IsOptional()
   @IsString()
-  @Matches(/\.webp$/i, { message: 'La imagen debe ser formato .webp' })
-  readonly imageL?: string;
+  @IsOptional()
+  readonly flyer?: string;
 
-  @IsOptional()
   @IsString()
-  @Matches(/\.webp$/i, { message: 'La imagen debe ser formato .webp' })
-  readonly imageS?: string;
+  @IsOptional()
+  readonly image1?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly image2?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly image3?: string;
 
   @IsOptional()
   @IsInt()

@@ -24,14 +24,20 @@ export class Event {
   @Column('int')
   capacity: number;
 
-  @Column({ length: 255, nullable: true })
-  imageL: string;
-
-  @Column({ length: 255, nullable: true })
-  imageS: string;
-
   @Column('tinyint')
   status: number;
+
+  @Column({ length: 255, nullable: true })
+  flyer: string;
+  
+  @Column({ length: 255, nullable: true })
+  image1: string;
+
+  @Column({ length: 255, nullable: true })
+  image2: string;
+
+  @Column({ length: 255, nullable: true })
+  image3: string;
 
   @OneToMany(() => Ticket, (ticket) => ticket.event)
   tickets: Ticket[];

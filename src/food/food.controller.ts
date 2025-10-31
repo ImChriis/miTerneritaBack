@@ -9,6 +9,9 @@ import {
   UseGuards,
   ParseIntPipe,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UseInterceptors, UploadedFile } from '@nestjs/common';
+import { diskStorage } from 'multer';
 import { FoodService } from './food.service';
 import { CreateFoodDto } from './dto/create-food.dto';
 import { UpdateFoodDto } from './dto/update-food.dto';
@@ -33,18 +36,49 @@ export class FoodController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  async create(@Body() createFoodDto: CreateFoodDto) {
-    return this.foodService.create(createFoodDto);
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: './assets',
+        filename: (req, file, cb) => {
+          cb(null, file.originalname);
+        },
+      }),
+    }),
+  )
+  async create(
+    @Body() createFoodDto: CreateFoodDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.foodService.create({
+      ...createFoodDto,
+      image: file?.originalname,
+    });
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: './assets',
+        filename: (req, file, cb) => {
+          cb(null, file.originalname);
+        },
+      }),
+    }),
+  )
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateFoodDto: UpdateFoodDto,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.foodService.update(id, updateFoodDto);
+    const updateData = {
+      ...updateFoodDto,
+      ...(file && { image: file.originalname }),
+    };
+    return this.foodService.update(id, updateData);
   }
 
   @Delete(':id')

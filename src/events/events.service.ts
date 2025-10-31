@@ -17,8 +17,20 @@ export class EventsService {
   ) {}
 
   async create(createEventDto: CreateEventDto): Promise<Event> {
-    const event = this.eventsRepository.create(createEventDto);
-    return this.eventsRepository.save(event);
+  const event = this.eventsRepository.create({
+    name: createEventDto.name,
+    description: createEventDto.description,
+    date: createEventDto.date,
+    time: createEventDto.time,
+    room: createEventDto.room,
+    capacity: createEventDto.capacity,
+    status: 1, // o createEventDto.status si lo envías desde el frontend
+    flyer: createEventDto.flyer,     // nombre del archivo subido
+    image1: createEventDto.image1,   // nombre del archivo subido
+    image2: createEventDto.image2,   // nombre del archivo subido
+    image3: createEventDto.image3,   // nombre del archivo subido
+  });
+  return this.eventsRepository.save(event);
   }
 
   async findAll(): Promise<Event[]> {
