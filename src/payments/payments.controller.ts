@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -45,5 +46,10 @@ export class PaymentsController {
   @Roles('admin', 'user')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.paymentsService.findOne(id);
+  }
+
+  @Delete(':id')
+  async softDelete(@Param('id') id: number): Promise<void> {
+    await this.paymentsService.softDelete(id);
   }
 }

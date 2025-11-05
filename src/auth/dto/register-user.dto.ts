@@ -8,15 +8,17 @@ import {
 
 export class RegisterUserDto {
   @IsString()
-  readonly phone?: string;
-  @IsString()
   readonly name: string;
 
   @IsString()
   readonly lastName: string;
 
+  
   @IsString()
   readonly cedula: string;
+
+  @IsString()
+  readonly phone?: string;
 
   @IsEmail()
   readonly email: string;

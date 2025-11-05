@@ -9,6 +9,7 @@ import { Payment } from './payment.entity';
 
 @Entity('PaymentDetails')
 export class PaymentDetails {
+  
   @PrimaryGeneratedColumn({ name: 'idPaymentDetails' })
   id: number;
 

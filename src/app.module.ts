@@ -43,11 +43,11 @@ import { join } from "path";
         secure: false, // true para puerto 465 (SSL), false para 587 (TLS)
         auth: {
           user: process.env.MAIL_USER, // josecaherofficial@gmail.com
-          pass: process.env.MAIL_PASSWORD, // smvt qult bmel uigc
+          pass: process.env.MAIL_PASSWORD, 
         },
       },
       defaults: {
-        from: '"Mi Ternerita House" <${process.env.MAIL_FROM}>',  // From amigable para inbox
+        from: '"Mi Ternerita House" <${process.env.MAIL_FROM}>', 
       },
       //
     }),

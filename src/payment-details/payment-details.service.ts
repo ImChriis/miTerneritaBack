@@ -130,48 +130,55 @@ export class PaymentDetailsService {
     return savedPaymentDetails;
   }
 
-  // ...existing code...
-async updateStatus(
-  id: number,
-  updateStatusDto: UpdatePaymentDetailsStatusDto,
-): Promise<PaymentDetails> {
-  const paymentDetails = await this.paymentDetailsRepository.findOne({
-    where: { idPaymentDetails: id },
-    relations: ['idUser', 'idEvent', 'idTicket', 'payment'],
-  });
-  if (!paymentDetails) {
-    throw new NotFoundException('Detalle de pago no encontrado');
-  }
-
-
-  const shouldSendEmail =
-    !paymentDetails.checked && updateStatusDto.checked === true;
-
-  paymentDetails.checked = updateStatusDto.checked;
-  const updatedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
-
-  if (shouldSendEmail) {
-    await this.mailService.sendTicketScannedConfirmation(updatedPaymentDetails);
-  }
-
-  return updatedPaymentDetails;
-}
-// ...existing code...
-
-  async findAll(): Promise<PaymentDetails[]> {
-    return this.paymentDetailsRepository.find({
-      relations: ['payment', 'idEvent', 'idUser', 'idTicket', 'idConsumeDetails'],
+  async updateStatus(
+    id: number,
+    updateStatusDto: UpdatePaymentDetailsStatusDto,
+  ): Promise<PaymentDetails> {
+    const paymentDetails = await this.paymentDetailsRepository.findOne({
+      where: { idPaymentDetails: id },
+      relations: ['idUser', 'idEvent', 'idTicket', 'payment'],
     });
+    if (!paymentDetails) {
+      throw new NotFoundException('Detalle de pago no encontrado');
+    }
+
+    const shouldSendEmail =
+      !paymentDetails.checked && updateStatusDto.checked === true;
+      
+    paymentDetails.checked = updateStatusDto.checked;
+    const updatedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
+
+    if (shouldSendEmail) {
+      await this.mailService.sendTicketScannedConfirmation(updatedPaymentDetails);
+    }
+    return updatedPaymentDetails;
   }
+
+    async findAll(): Promise<PaymentDetails[]> {
+      return this.paymentDetailsRepository.find({
+        where: { isDeleted: false },
+        relations: ['payment', 'idEvent', 'idUser', 'idTicket', 'idConsumeDetails'],
+      });
+    }
 
   async findOne(id: number): Promise<PaymentDetails> {
     const paymentDetails = await this.paymentDetailsRepository.findOne({
-      where: { idPaymentDetails: id },
+      where: { idPaymentDetails: id, isDeleted: false },
       relations: ['payment', 'idEvent', 'idUser', 'idTicket', 'idConsumeDetails'],
     });
     if (!paymentDetails) {
       throw new NotFoundException('Detalle de pago no encontrado');
     }
     return paymentDetails;
+  }
+
+    async softDelete(id: number): Promise<void> {
+    const paymentDetails = await this.paymentDetailsRepository.findOne({ where: { idPaymentDetails: id } });
+    if (!paymentDetails) {
+      throw new NotFoundException('Detalle de pago no encontrado');
+    }
+    paymentDetails.isDeleted = true;
+    await this.paymentDetailsRepository.save(paymentDetails);
+    this.logger.log(`PaymentDetails ID ${id} marcado como eliminado`);
   }
 }

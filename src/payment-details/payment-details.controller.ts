@@ -8,6 +8,7 @@ import {
   UseGuards,
   ParseIntPipe,
   Patch,
+  Delete
 } from '@nestjs/common';
 import { PaymentDetailsService } from './payment-details.service';
 import { CreatePaymentDetailsDto } from './dto/create-payment-detail.dto';
@@ -46,5 +47,10 @@ export class PaymentDetailsController {
   @Roles('admin')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.paymentDetailsService.findOne(id);
+  }
+  
+  @Delete(':id')
+  async softDelete(@Param('id') id: number): Promise<void> {
+    await this.paymentDetailsService.softDelete(id);
   }
 }

@@ -45,24 +45,23 @@ export class PaymentsService {
       noDocumento,
       date,
       time,
-      totalBaseImponible,
-      impuestoBaseImponible,
-      totalExento,
-      descuento,
-      subtotalGeneral,
-      porcentajeIgtf,
-      totalIgtf,
-      impuesto,
-      porcentajeIva,
-      totalGeneral,
-      tasaDolar,
-      montoDolar,
+      // totalBaseImponible,
+      // impuestoBaseImponible,
+      // totalExento,
+      // descuento,
+      // subtotalGeneral,
+      // porcentajeIgtf,
+      // totalIgtf,
+      // impuesto,
+      // porcentajeIva,
+      // totalGeneral,
+      // tasaDolar,
+      // montoDolar,
       comprobante,
       banco,
       referencia,
       fechaTransferencia,
       status,
-      consumeItems,
     } = createPaymentDto;
 
   const user = await this.usersRepository.findOne({ where: { id: idUser } });
@@ -84,18 +83,18 @@ export class PaymentsService {
         noDocumento,
         date,
         time,
-        totalBaseImponible,
-        impuestoBaseImponible,
-        totalExento,
-        descuento,
-        subtotalGeneral,
-        porcentajeIgtf,
-        totalIgtf,
-        impuesto,
-        porcentajeIva,
-        totalGeneral,
-        tasaDolar,
-        montoDolar,
+        // totalBaseImponible,
+        // impuestoBaseImponible,
+        // totalExento,
+        // descuento,
+        // subtotalGeneral,
+        // porcentajeIgtf,
+        // totalIgtf,
+        // impuesto,
+        // porcentajeIva,
+        // totalGeneral,
+        // tasaDolar,
+        // montoDolar,
         comprobante,
         banco,
         referencia,
@@ -105,33 +104,6 @@ export class PaymentsService {
 
       const savedPayment = await manager.save(payment);
 
-      if (consumeItems && Array.isArray(consumeItems)) {
-        for (const item of consumeItems) {
-          if (item.detailType === 'ticket' && item.idTicket) {
-            await this.paymentDetailsService.create({
-              idPayment: savedPayment.idPayment,
-              idEvents: event.idEvents,
-              idUser: user.id,
-              idTicket: item.idTicket,
-              precio: item.price,
-              checked: false,
-              status: 0,
-            });
-          } else if (
-            (item.detailType === 'food' && item.idFood) ||
-            (item.detailType === 'drink' && item.idDrinks)
-          ) {
-            await this.consumeDetailsService.create({
-              idPayment: savedPayment.idPayment,
-              idFood: item.idFood,
-              idDrinks: item.idDrinks,
-              foodAmount: item.foodAmount,
-              drinksAmount: item.drinksAmount,
-              totalConsume: item.totalConsume,  
-            });
-          }
-        }
-      }
       return savedPayment;
     });
   }
@@ -169,7 +141,7 @@ export class PaymentsService {
 
   async findOne(id: number): Promise<Payment> {
     const payment = await this.paymentsRepository.findOne({
-      where: { idPayment: id },
+      where: { idPayment: id, isDeleted: false },
       relations: ['idUser', 'idEvents', 'consumeDetails', 'paymentDetails'],
     });
     if (!payment) {
@@ -241,7 +213,18 @@ export class PaymentsService {
 
   async findAll(): Promise<Payment[]> {
     return this.paymentsRepository.find({
+      where : { isDeleted: false },
       relations: ['idUser', 'idEvents', 'consumeDetails', 'paymentDetails'],
     });
+  }
+
+  async softDelete(id: number): Promise<void> {
+  const payment = await this.paymentsRepository.findOne({ where: { idPayment: id } });
+  if (!payment) {
+    throw new NotFoundException('Pago no encontrado');
+  }
+  payment.isDeleted = true;
+  await this.paymentsRepository.save(payment);
+  this.logger.log(`Pago ID ${id} marcado como eliminado`);
   }
 }

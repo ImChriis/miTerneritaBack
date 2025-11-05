@@ -96,4 +96,8 @@ export class Payment {
 
   @OneToMany(() => PaymentDetails, (paymentDetails) => paymentDetails.payment)
   paymentDetails: PaymentDetails[];
+
+  @Column({default: false})
+  isDeleted: boolean;
+
 }

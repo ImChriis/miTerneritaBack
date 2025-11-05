@@ -10,37 +10,6 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class ConsumeItemDto {
-  @IsString()
-  detailType: 'ticket' | 'food' | 'drink';
-
-  @IsInt()
-  @Min(1)
-  totalConsume: number;
-
-  @IsNumber()
-  @Min(0)
-  price: number;
-
-  @IsInt()
-  @Min(1)
-  foodAmount: number;
-
-  @IsInt()
-  @Min(1)
-  drinksAmount: number;
-
-  // IDs for each type
-  @IsInt()
-  idTicket?: number;
-
-  @IsInt()
-  idFood?: number;
-
-  @IsInt()
-  idDrinks?: number;
-}
-
 export class CreatePaymentDto {
   @IsInt()
   readonly idUser: number;
@@ -60,41 +29,41 @@ export class CreatePaymentDto {
   @IsString()
   readonly time: string;
 
-  @IsNumber()
-  readonly totalBaseImponible?: number;
+  // @IsNumber()
+  // readonly totalBaseImponible?: number;
 
-  @IsNumber()
-  readonly impuestoBaseImponible?: number;
+  // @IsNumber()
+  // readonly impuestoBaseImponible?: number;
 
-  @IsNumber()
-  readonly totalExento?: number;
+  // @IsNumber()
+  // readonly totalExento?: number;
 
-  @IsNumber()
-  readonly descuento?: number;
+  // @IsNumber()
+  // readonly descuento?: number;
 
-  @IsNumber()
-  readonly subtotalGeneral?: number;
+  // @IsNumber()
+  // readonly subtotalGeneral?: number;
 
-  @IsNumber()
-  readonly porcentajeIgtf?: number;
+  // @IsNumber()
+  // readonly porcentajeIgtf?: number;
 
-  @IsNumber()
-  readonly totalIgtf?: number;
+  // @IsNumber()
+  // readonly totalIgtf?: number;
 
-  @IsNumber()
-  readonly impuesto?: number;
+  // @IsNumber()
+  // readonly impuesto?: number;
 
-  @IsNumber()
-  readonly porcentajeIva?: number;
+  // @IsNumber()
+  // readonly porcentajeIva?: number;
 
-  @IsNumber()
-  readonly totalGeneral?: number;
+  // @IsNumber()
+  // readonly totalGeneral?: number;
 
-  @IsNumber()
-  readonly tasaDolar?: number;
+  // @IsNumber()
+  // readonly tasaDolar?: number;
 
-  @IsNumber()
-  readonly montoDolar?: number;
+  // @IsNumber()
+  // readonly montoDolar?: number;
 
   @IsString()
   readonly comprobante?: string;
@@ -111,8 +80,4 @@ export class CreatePaymentDto {
   @IsInt()
   readonly status: number;
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ConsumeItemDto)
-  readonly consumeItems?: ConsumeItemDto[];
 }

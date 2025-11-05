@@ -28,7 +28,7 @@ export class PaymentDetails {
   @JoinColumn({ name: 'idUser' })
   idUser: User;
 
-  @Column({ name: 'ticketNum', type: 'int', nullable: true }) // Nullable
+  @Column({ name: 'ticketNum', type: 'int'}) 
   ticketNum: number;
 
   @Column({ name: 'precio', type: 'decimal', precision: 10, scale: 2 })
@@ -62,4 +62,7 @@ export class PaymentDetails {
 
   @Column({ name: 'checked', type: 'tinyint' })
   checked: boolean;
+
+  @Column({ default: false })
+  isDeleted: boolean;
 }
