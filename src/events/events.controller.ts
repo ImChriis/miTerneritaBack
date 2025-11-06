@@ -38,10 +38,10 @@ export class EventsController {
   @Roles('admin')
   @UseInterceptors(
     FileFieldsInterceptor([
-      { name: 'flyer', maxCount: 1 },
-      { name: 'image1', maxCount: 1 },
-      { name: 'image2', maxCount: 1 },
-      { name: 'image3', maxCount: 1 },
+      { name: 'flyer', maxCount: 2 },
+      { name: 'image1', maxCount: 2 },
+      { name: 'image2', maxCount: 2 },
+      { name: 'image3', maxCount: 2 },
     ], {
       storage: diskStorage({
         destination: './assets',
@@ -49,6 +49,7 @@ export class EventsController {
           cb(null, file.originalname);
         },
       }),
+      limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB
     }),
   )
   async create(
@@ -58,8 +59,9 @@ export class EventsController {
       image1?: Express.Multer.File[],
       image2?: Express.Multer.File[],
       image3?: Express.Multer.File[],
-    },
+    } = {},
   ) {
+    files = files || {};
     return this.eventsService.create({
       ...createEventDto,
       flyer: files.flyer?.[0]?.originalname,
@@ -74,10 +76,10 @@ export class EventsController {
   @Roles('admin')
   @UseInterceptors(
     FileFieldsInterceptor([
-      { name: 'flyer', maxCount: 1 },
-      { name: 'image1', maxCount: 1 },
-      { name: 'image2', maxCount: 1 },
-      { name: 'image3', maxCount: 1 },
+      { name: 'flyer', maxCount: 2 },
+      { name: 'image1', maxCount: 2 },
+      { name: 'image2', maxCount: 2 },
+      { name: 'image3', maxCount: 2 },
     ], {
       storage: diskStorage({
         destination: './assets',
@@ -85,6 +87,7 @@ export class EventsController {
           cb(null, file.originalname);
         },
       }),
+      limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB
     }),
   )
   async update(
@@ -95,8 +98,9 @@ export class EventsController {
       image1?: Express.Multer.File[],
       image2?: Express.Multer.File[],
       image3?: Express.Multer.File[],
-    },
+    } = {},
   ) {
+    files = files || {};
     const updateData = {
       ...updateEventDto,
       ...(files.flyer && { flyer: files.flyer[0].originalname }),

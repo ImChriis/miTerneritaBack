@@ -21,7 +21,10 @@ export class CreateEventDto {
   @IsDateString()
   readonly date: string;
 
-  @IsDateString()
+  @IsString()
+  @Matches(/^([0][1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i, {
+    message: 'La hora debe estar en formato 12 horas (hh:mm AM/PM)',
+  })
   readonly time: string;
 
   @IsString()

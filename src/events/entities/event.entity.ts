@@ -27,16 +27,16 @@ export class Event {
   @Column('tinyint')
   status: number;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'text', nullable: true })
   flyer: string;
-  
-  @Column({ length: 255, nullable: true })
+
+  @Column({ type: 'text', nullable: true })
   image1: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'text', nullable: true })
   image2: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'text', nullable: true })
   image3: string;
 
   @OneToMany(() => Ticket, (ticket) => ticket.event)
