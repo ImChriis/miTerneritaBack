@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width"/>
+    <title>Confirmación de entradas compradas</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#333;">
+    <table role="presentation" width="100%" style="border-collapse:collapse;">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <table role="presentation" style="width:600px;max-width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e6e9ee;">
+            <tr>
+              <td style="background:#0b63d3;color:#fff;padding:18px 24px;">
+                <h1 style="margin:0;font-size:20px;">Confirmación de entradas</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 24px;">
+                <p style="margin:0 0 12px 0;font-size:15px;">Hola {{userName}},</p>
+                <p style="margin:0 0 18px 0;font-size:14px;line-height:1.5;color:#555;">
+                  Gracias por tu compra para el evento <strong>{{eventName}}</strong>. Aquí tienes tus códigos QR:
+                </p>
+                {{#each qrList}}
+                  <table role="presentation" width="100%" style="margin:18px 0 16px 0;border-collapse:collapse;">
+                    <tr>
+                      <td style="padding:12px;background:#f7f9fc;border-radius:6px;border:1px solid #eef2f7;">
+                        <strong style="display:block;font-size:13px;margin-bottom:6px;color:#0b63d3;">Entrada</strong>
+                        <div style="font-size:14px;color:#222;">{{ticketName}}</div>
+                        <div style="font-size:13px;color:#666;">ID detalle: <strong>{{paymentDetailId}}</strong></div>
+                      </td>
+                      <td style="width:24px;"></td>
+                      <td style="text-align:center;">
+                        <img src="{{qrCodeImage}}" alt="Código QR de confirmación" style="max-width:120px;border:1px solid #e6e9ee;border-radius:6px;padding:6px;background:#fff;" />
+                      </td>
+                    </tr>
+                  </table>
+                {{/each}}
+                <p style="font-size:13px;color:#666;margin:12px 0 0 0;">
+                  Conserva este correo como comprobante. Si necesitas asistencia, responde a este mensaje.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#fafbfd;padding:14px 24px;border-top:1px solid #eef2f7;text-align:center;">
+                <small style="color:#8a93a6;font-size:12px;">
+                  © {{currentYear}} MiTernerita. Todos los derechos reservados.
+                </small>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -53,6 +53,13 @@ export class TicketsService {
     return ticket;
   }
 
+  async findByEvent(eventId: number): Promise<Ticket[]> {
+    return this.ticketsRepository.find({
+      where: { event: { idEvents: eventId } },
+      relations: ['event'],
+    });
+  }
+
   async update(id: number, updateTicketDto: UpdateTicketDto): Promise<Ticket> {
     const ticket = await this.findOne(id);
 

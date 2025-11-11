@@ -11,7 +11,7 @@ import { User } from '../../users/entities/user.entity';
 import { Ticket } from '../../tickets/entities/ticket.entity';
 import { ConsumeDetails } from '../../consumeDetails/entities/consumeDetail.entity';
 
-@Entity('PaymentDetails')
+@Entity('paymentdetails')
 export class PaymentDetails {
   @PrimaryGeneratedColumn({ name: 'idPaymentDetails' })
   idPaymentDetails: number;

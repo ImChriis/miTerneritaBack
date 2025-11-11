@@ -54,6 +54,7 @@ export class PaymentDetailsService {
       precio : price,
       checked = false,
       status = 0,
+      quantity = 1,
     } = createPaymentDetailsDto;
 
     // Obtener instancias completas de las entidades relacionadas
@@ -107,27 +108,39 @@ export class PaymentDetailsService {
     // Usar el precio del DTO o el precio del ticket si no se proporciona
     const finalPrice = price ?? ticket.price;
 
-    const paymentDetails = this.paymentDetailsRepository.create({
-      payment,
-      idEvent: event,
-      idUser: user,
-      ticketNum: createPaymentDetailsDto.ticketNum,
-      precio: finalPrice,
-      totalBase : createPaymentDetailsDto.totalBase,
-      impuestoCalculado : createPaymentDetailsDto.impuestoCalculado,
-      total : createPaymentDetailsDto.total,
-      tasaDolarEvento : createPaymentDetailsDto.tasaDolarEvento,
-      totalDolarEvento : createPaymentDetailsDto.totalDolarEvento,
-      idTicket: ticket,
-      idConsumeDetails: consumeDetails,
-      status,
-      checked,
-    });
+    if (quantity < 1 || quantity > 10) {
+      throw new BadRequestException('Solo puedes comprar entre 1 y 10 entradas');
+    }
 
-    const savedPaymentDetails = await this.paymentDetailsRepository.save(
-      paymentDetails,
-    );
-    return savedPaymentDetails;
+    const paymentDetailsList: PaymentDetails[] = [];
+
+    for (let i = 0; i < quantity; i++) {
+      const paymentDetails = this.paymentDetailsRepository.create({
+        payment,
+        idEvent: event,
+        idUser: user,
+        ticketNum: createPaymentDetailsDto.ticketNum,
+        precio: finalPrice,
+        totalBase : createPaymentDetailsDto.totalBase,
+        impuestoCalculado : createPaymentDetailsDto.impuestoCalculado,
+        total : createPaymentDetailsDto.total,
+        tasaDolarEvento : createPaymentDetailsDto.tasaDolarEvento,
+        totalDolarEvento : createPaymentDetailsDto.totalDolarEvento,
+        idTicket: ticket,
+        idConsumeDetails: consumeDetails,
+        status,
+        checked,
+      });
+
+      const savedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
+
+      // Enviar QR por cada entrada
+      await this.mailService.sendTicketScannedConfirmation([savedPaymentDetails]);
+
+      paymentDetailsList.push(savedPaymentDetails);
+    }
+
+    return paymentDetailsList[0]; // Retornar el primer PaymentDetails creado
   }
 
   async updateStatus(
@@ -149,7 +162,7 @@ export class PaymentDetailsService {
     const updatedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
 
     if (shouldSendEmail) {
-      await this.mailService.sendTicketScannedConfirmation(updatedPaymentDetails);
+      await this.mailService.sendTicketScannedConfirmation([updatedPaymentDetails]);
     }
     return updatedPaymentDetails;
   }

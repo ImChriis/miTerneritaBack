@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
 
-@Entity('Users')
+@Entity('users')
 @Unique(['cedula'])
 @Unique(['email'])
 export class User {

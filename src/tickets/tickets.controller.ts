@@ -30,6 +30,11 @@ export class TicketsController {
     return this.ticketsService.findOne(id);
   }
 
+  @Get('event/:eventId')
+  async findByEvent(@Param('eventId', ParseIntPipe) eventId: number) {
+    return this.ticketsService.findByEvent(eventId);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

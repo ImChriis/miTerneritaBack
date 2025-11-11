@@ -42,4 +42,7 @@ export class CreatePaymentDetailsDto {
 
   @IsBoolean()
   checked: boolean;
+
+  @IsInt()
+  quantity: number;
 }

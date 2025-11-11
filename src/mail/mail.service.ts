@@ -9,40 +9,42 @@ export class MailService {
   constructor(private mailerService: MailerService) {}
 
   /**
-   * Envía un correo de confirmación cuando el ticket ha sido escaneado.
-   * @param paymentDetail Detalle del pago escaneado.
+   * Envía un solo correo con todos los QRs de los tickets comprados.
+   * @param paymentDetails Array de detalles de pago.
    */
-  async sendTicketScannedConfirmation(paymentDetail: PaymentDetails) {
-    const userEmail = paymentDetail.idUser.email;
-    const userName = paymentDetail.idUser.name;
-    const eventName = paymentDetail.idEvent.name;
-    const ticketName = paymentDetail.idTicket.name;
-    const paymentId = paymentDetail.payment.idPayment;
-    const paymentDetailId = paymentDetail.idPaymentDetails;
+  async sendTicketScannedConfirmation(paymentDetails: PaymentDetails[]) {
+    if (!paymentDetails || paymentDetails.length === 0) return;
 
-    // Genera el QR usando el API externo (más simple y configurable)
-    const qrData = `PaymentDetailID:${paymentDetailId};PaymentID:${paymentId};User:${paymentDetail.idUser.id};Event:${paymentDetail.idEvent.idEvents};Ticket:${paymentDetail.idTicket.idTicket};Scanned:true`;
-    const qrCodeImage = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+    const userEmail = paymentDetails[0].idUser.email;
+    const userName = paymentDetails[0].idUser.name;
+    const eventName = paymentDetails[0].idEvent.name;
+
+    // Construye la lista de QRs
+    const qrList = paymentDetails.map(detail => {
+      const qrData = `PaymentDetailID:${detail.idPaymentDetails};PaymentID:${detail.payment.idPayment};User:${detail.idUser.id};Event:${detail.idEvent.idEvents};Ticket:${detail.idTicket.idTicket};Scanned:true`;
+      const qrCodeImage = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+      return {
+        ticketName: detail.idTicket.name,
+        paymentDetailId: detail.idPaymentDetails,
+        qrCodeImage,
+      };
+    });
 
     try {
       await this.mailerService.sendMail({
         to: userEmail,
-        subject: `¡Tu ticket para ${eventName} ha sido escaneado!`,
-        template: 'ticket-scanned-confirmation',
+        subject: `¡Tus tickets para ${eventName}!`,
+        template: 'tickets-multiple-confirmation', // Debes crear este template
         context: {
           userName: userName || 'usuario',
           eventName: eventName || 'evento',
-          ticketName: ticketName || 'ticket',
-          paymentId: paymentId || 'N/A',
-          paymentDetailId: paymentDetailId || 'N/A',
-          qrCodeImage,
+          qrList,
           currentYear: new Date().getFullYear(),
         },
       });
-      this.logger.log(`Correo de confirmación enviado a ${userEmail} para PaymentDetail ID: ${paymentDetailId}`);
+      this.logger.log(`Correo de confirmación enviado a ${userEmail} con ${qrList.length} QRs`);
     } catch (error) {
       this.logger.error(`Error enviando correo de confirmación a ${userEmail}:`, error.stack);
-      // No relanzar el error para no bloquear la lógica de negocio
     }
   }
 }
