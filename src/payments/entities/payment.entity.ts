@@ -12,7 +12,7 @@ import { Event } from '../../events/entities/event.entity';
 import { ConsumeDetails } from '../../consumeDetails/entities/consumeDetail.entity';
 import { PaymentDetails } from '../../payment-details/entities/paymentDetail.entity';
 
-@Entity('Payment')
+@Entity('payment')
 export class Payment {
   @PrimaryGeneratedColumn({ name: 'idPayment' })
   idPayment: number;
@@ -32,11 +32,11 @@ export class Payment {
   @Column({ length: 100, nullable: true })
   noDocumento: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp' })
   date: Date;
 
-  @Column({ type: 'time' })
-  time: string;
+  // @Column({ type: 'time' })
+  // time: string;
 
   @Column('decimal', { precision: 15, scale: 2, nullable: true })
   totalBaseImponible: number;
@@ -87,7 +87,7 @@ export class Payment {
   fechaTransferencia: Date;
 
   @Column({ type: 'tinyint', width: 4 })
-  status: number;
+  status: string;
 
   @OneToMany(() => ConsumeDetails, (consumeDetails) => consumeDetails.idPayment, {
     cascade: true,

@@ -9,6 +9,7 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { CreatePaymentDetailsDto } from '../../payment-details/dto/create-payment-detail.dto';
 
 export class CreatePaymentDto {
   @IsInt()
@@ -25,9 +26,6 @@ export class CreatePaymentDto {
 
   @IsString()
   readonly date: string;
-
-  @IsString()
-  readonly time: string;
 
   // @IsNumber()
   // readonly totalBaseImponible?: number;
@@ -56,14 +54,14 @@ export class CreatePaymentDto {
   // @IsNumber()
   // readonly porcentajeIva?: number;
 
-  // @IsNumber()
-  // readonly totalGeneral?: number;
+  @IsNumber()
+  readonly totalGeneral?: number;
 
-  // @IsNumber()
-  // readonly tasaDolar?: number;
+  @IsNumber()
+  readonly tasaDolar?: number;
 
-  // @IsNumber()
-  // readonly montoDolar?: number;
+  @IsNumber()
+  readonly montoDolar?: number;
 
   @IsString()
   readonly comprobante?: string;
@@ -79,5 +77,10 @@ export class CreatePaymentDto {
 
   @IsInt()
   readonly status: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreatePaymentDetailsDto)
+  readonly paymentDetails?: CreatePaymentDetailsDto[];
 
 }

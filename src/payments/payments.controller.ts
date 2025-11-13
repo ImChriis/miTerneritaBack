@@ -27,15 +27,6 @@ export class PaymentsController {
     return this.paymentsService.create(createPaymentDto);
   }
 
-  @Put(':id/status')
-  @Roles('admin')
-  async updateStatus(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updatePaymentStatusDto: UpdatePaymentStatusDto,
-  ) {
-    return this.paymentsService.updateStatus(id, updatePaymentStatusDto);
-  }
-
   @Get()
   @Roles('admin')
   async findAll() {
