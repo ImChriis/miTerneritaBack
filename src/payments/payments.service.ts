@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,12 +8,12 @@ import { Repository, DataSource } from 'typeorm';
 import { Payment } from './entities/payment.entity';
 import { User } from '../users/entities/user.entity';
 import { Event } from '../events/entities/event.entity';
+import { ConsumeDetails } from '../consumeDetails/entities/consumeDetail.entity';
+import { Ticket } from '../tickets/entities/ticket.entity';
+import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentDetailsService } from '../payment-details/payment-details.service';
-import { ConsumeDetailsService } from '../consumeDetails/consumeDetails.service';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
-import { MailerService } from '@nestjs-modules/mailer';
-import * as QRCode from 'qrcode';
 
 @Injectable()
 export class PaymentsService {
@@ -30,12 +29,18 @@ export class PaymentsService {
     @InjectRepository(Event)
     private eventsRepository: Repository<Event>,
 
+    @InjectRepository(ConsumeDetails)
+    private consumeDetailsRepository: Repository<ConsumeDetails>,
+
+    @InjectRepository(Ticket)
+    private ticketsRepository: Repository<Ticket>,
+
+    @InjectRepository(PaymentDetails)
+    private paymentDetailsRepository: Repository<PaymentDetails>,
+
     private readonly dataSource: DataSource,
 
-    private readonly mailerService: MailerService,
-
     private readonly paymentDetailsService: PaymentDetailsService,
-    // private readonly consumeDetailsService: ConsumeDetailsService,
   ) {}
 
   async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
@@ -43,21 +48,13 @@ export class PaymentsService {
       idUser,
       idEvents,
       idConsumeDetails,
+      idTicket,
+      ticketNum,
       noDocumento,
       date,
-      // time,
-      // totalBaseImponible,
-      // impuestoBaseImponible,
-      // totalExento,
-      // descuento,
-      // subtotalGeneral,
-      // porcentajeIgtf,
-      // totalIgtf,
-      // impuesto,
-      // porcentajeIva,
-      // totalGeneral,
-      // tasaDolar,
-      // montoDolar,
+      totalGeneral,
+      tasaDolar,
+      montoDolar,
       comprobante,
       banco,
       referencia,
@@ -65,45 +62,98 @@ export class PaymentsService {
       status,
     } = createPaymentDto;
 
-  const user = await this.usersRepository.findOne({ where: { id: idUser } });
-    if (!user) {
+    // Validar y obtener entidades relacionadas
+    const user = await this.usersRepository.findOneOrFail({ 
+      where: { id: idUser } 
+    }).catch(() => {
       throw new NotFoundException('Usuario no encontrado');
-    }
+    });
 
-    const event = await this.eventsRepository.findOne({ where: { idEvents } });
-    if (!event) {
+    const event = await this.eventsRepository.findOneOrFail({ 
+      where: { idEvents } 
+    }).catch(() => {
       throw new NotFoundException('Evento no encontrado');
+    });
+
+    const ticket = await this.ticketsRepository.findOneOrFail({
+      where: { idTicket, event: { idEvents } },
+      relations: ['event'],
+    }).catch(() => {
+      throw new NotFoundException('Ticket no encontrado o no pertenece al evento especificado');
+    });
+
+    let consumeDetails: ConsumeDetails | undefined;
+    if (idConsumeDetails) {
+      const found = await this.consumeDetailsRepository.findOne({
+        where: { idConsumeDetails },
+      });
+      if (!found) {
+        throw new NotFoundException('ConsumeDetails no encontrado');
+      }
+      consumeDetails = found;
     }
 
-    // Transacción para crear Payment y detalles
+    // Validar cantidad de tickets
+    if (ticketNum < 1 || ticketNum > 10) {
+      throw new NotFoundException('Solo puedes comprar entre 1 y 10 entradas');
+    }
+
+    // Transacción para crear Payment y PaymentDetails
     return this.dataSource.transaction(async (manager) => {
+      // Crear Payment
       const payment = manager.create(Payment, {
         idUser: user,
         idEvents: event,
-        idConsumeDetails: idConsumeDetails ? { idConsumeDetails } : undefined,
+        idConsumeDetails: consumeDetails,
         noDocumento,
-        date,
-        // time,
-        // totalBaseImponible,
-        // impuestoBaseImponible,
-        // totalExento,
-        // descuento,
-        // subtotalGeneral,
-        // porcentajeIgtf,
-        // totalIgtf,
-        // impuesto,
-        // porcentajeIva,
-        // totalGeneral,
-        // tasaDolar,
-        // montoDolar,
+        date: new Date(date),
+        totalGeneral,
+        tasaDolar,
+        montoDolar,
         comprobante,
         banco,
         referencia,
-        fechaTransferencia,
-        status,
-      } as any);
+        fechaTransferencia: fechaTransferencia ? new Date(fechaTransferencia) : undefined,
+        status: String(status),
+      });
 
       const savedPayment = await manager.save(payment);
+
+      // Calcular valores por ticket (dividir el total entre la cantidad de tickets)
+      const precioPorTicket = ticket.price;
+      const totalBasePorTicket = totalGeneral ? totalGeneral / ticketNum : precioPorTicket;
+      const impuestoCalculadoPorTicket = 0; // Ajustar según lógica de negocio
+      const totalPorTicket = precioPorTicket;
+      const tasaDolarEvento = tasaDolar ?? 0;
+      const totalDolarEventoPorTicket = montoDolar ? montoDolar / ticketNum : 0;
+
+      // Crear PaymentDetails para cada ticket
+      const paymentDetailsList: PaymentDetails[] = [];
+      for (let i = 1; i <= ticketNum; i++) {
+        const paymentDetail = manager.create(PaymentDetails, {
+          payment: savedPayment,
+          idEvent: event,
+          idUser: user,
+          ticketNum: i, // Número secuencial del ticket (1, 2, 3, ...)
+          precio: precioPorTicket,
+          totalBase: totalBasePorTicket,
+          impuestoCalculado: impuestoCalculadoPorTicket,
+          total: totalPorTicket,
+          tasaDolarEvento: tasaDolarEvento,
+          totalDolarEvento: totalDolarEventoPorTicket,
+          idTicket: ticket,
+          idConsumeDetails: consumeDetails,
+          status: status === 1 ? 1 : 0, // 1 = aprobado, 0 = pendiente
+          checked: false,
+        });
+
+        const savedPaymentDetail = await manager.save(paymentDetail);
+        paymentDetailsList.push(savedPaymentDetail);
+      }
+
+      this.logger.log(
+        `Payment ID ${savedPayment.idPayment} creado con ${ticketNum} PaymentDetails`,
+      );
 
       return savedPayment;
     });
@@ -173,12 +223,14 @@ export class PaymentsService {
 }
 
   async softDelete(id: number): Promise<void> {
-  const payment = await this.paymentsRepository.findOne({ where: { idPayment: id } });
-  if (!payment) {
-    throw new NotFoundException('Pago no encontrado');
-  }
-  payment.isDeleted = true;
-  await this.paymentsRepository.save(payment);
-  this.logger.log(`Pago ID ${id} marcado como eliminado`);
+    const payment = await this.paymentsRepository.findOne({ 
+      where: { idPayment: id, isDeleted: false } 
+    });
+    if (!payment) {
+      throw new NotFoundException('Pago no encontrado');
+    }
+    payment.isDeleted = true;
+    await this.paymentsRepository.save(payment);
+    this.logger.log(`Pago ID ${id} marcado como eliminado`);
   }
 }

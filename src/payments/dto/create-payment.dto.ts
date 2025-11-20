@@ -21,6 +21,13 @@ export class CreatePaymentDto {
   @IsInt()
   readonly idConsumeDetails?: number;
 
+  @IsInt()
+  readonly idTicket: number;
+
+  @IsInt()
+  @Min(1)
+  readonly ticketNum: number;
+
   @IsString()
   readonly noDocumento?: string;
 
