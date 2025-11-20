@@ -141,8 +141,8 @@ export class PaymentsService {
 
   const updatedPayment = await this.paymentsRepository.save(payment);
 
-  // Si el status cambió de 'Pendiente' a 'Aprovado'
-  if (prevStatus === 'Pendiente' && updatePaymentStatusDto.status === 'Aprovado') {
+  // Si el status cambió de 'Pendiente' a 'Aprobado'
+  if (prevStatus === 'Pendiente' && updatePaymentStatusDto.status === 'Aprobado') {
     // Obtén datos de ConsumeDetails si existen
     const consumeDetails = payment.idConsumeDetails;
 
@@ -151,7 +151,7 @@ export class PaymentsService {
       idPayment: payment.idPayment,
       idEvents: payment.idEvents.idEvents,
       idUser: payment.idUser.id,
-      ticketNum: 0, // No hay relación directa, asigna 0 o busca por Event si aplica
+      ticketNum: 0, 
       precio: payment.totalGeneral ?? 0, // Usa totalGeneral como precio
       totalBase: payment.totalBaseImponible ?? 0,
       impuestoCalculado: payment.impuestoBaseImponible ?? 0,
