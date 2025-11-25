@@ -86,8 +86,8 @@ export class Payment {
   @Column({ type: 'date', nullable: true })
   fechaTransferencia: Date;
 
-  @Column({ type: 'tinyint', width: 4 })
-  status: string;
+  @Column({ type: 'tinyint', width: 4, default: 0 })
+  status: number;
 
   @OneToMany(() => ConsumeDetails, (consumeDetails) => consumeDetails.idPayment, {
     cascade: true,

@@ -8,7 +8,7 @@ import {
   Min,
   ArrayMinSize,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { CreatePaymentDetailsDto } from '../../payment-details/dto/create-payment-detail.dto';
 
 export class CreatePaymentDto {
@@ -21,12 +21,32 @@ export class CreatePaymentDto {
   @IsInt()
   readonly idConsumeDetails?: number;
 
-  @IsInt()
-  readonly idTicket: number;
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').map((v) => parseInt(v.trim(), 10));
+    }
+    if (Array.isArray(value)) {
+      return value;
+    }
+    return [value];
+  })
+  @IsArray()
+  @IsInt({ each: true })
+  readonly idTicket: number[];
 
-  @IsInt()
-  @Min(1)
-  readonly ticketNum: number;
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').map((v) => parseInt(v.trim(), 10));
+    }
+    if (Array.isArray(value)) {
+      return value;
+    }
+    return [value];
+  })
+  @IsArray()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  readonly ticketNum: number[];
 
   @IsString()
   readonly noDocumento?: string;

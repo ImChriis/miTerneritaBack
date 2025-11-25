@@ -39,6 +39,15 @@ export class PaymentsController {
     return this.paymentsService.findOne(id);
   }
 
+  @Put(':id/status')
+  @Roles('admin')
+  async updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updatePaymentStatusDto: UpdatePaymentStatusDto,
+  ) {
+    return this.paymentsService.updateStatus(id, updatePaymentStatusDto);
+  }
+
   @Delete(':id')
   async softDelete(@Param('id') id: number): Promise<void> {
     await this.paymentsService.softDelete(id);

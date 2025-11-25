@@ -1,6 +1,8 @@
-import { IsString, IsEnum } from 'class-validator';
+import { IsEnum, IsInt } from 'class-validator';
+import { PaymentStatus } from '../../common/enums/payment-status.enum';
 
 export class UpdatePaymentStatusDto {
-  @IsEnum(['Aprobado', 'Pendiente', 'Rechazado'])
-  readonly status: 'Aprobado' | 'Pendiente' | 'Rechazado';
+  @IsInt()
+  @IsEnum(PaymentStatus)
+  readonly status: PaymentStatus;
 }
