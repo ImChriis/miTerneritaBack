@@ -15,6 +15,7 @@ import { TicketsModule } from '../tickets/tickets.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule } from '@nestjs/config';
 import { PaymentDetailsModule } from '../payment-details/payment-details.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PaymentDetailsModule } from '../payment-details/payment-details.module'
     PaymentDetailsModule,
     MailerModule,
     ConfigModule,
+    MailModule,
   ],
   providers: [PaymentsService],
   controllers: [PaymentsController],

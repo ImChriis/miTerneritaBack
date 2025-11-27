@@ -8,7 +8,11 @@ import {
   Body,
   UseGuards,
   ParseIntPipe,
+  Req,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
@@ -23,8 +27,20 @@ export class PaymentsController {
 
   @Post()
   @Roles('admin', 'user')
-  async create(@Body() createPaymentDto: CreatePaymentDto) {
-    return this.paymentsService.create(createPaymentDto);
+  @UseInterceptors(AnyFilesInterceptor())
+  async create(
+    @Body() createPaymentDto: CreatePaymentDto,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+    @Req() req: any,
+  ) {
+    console.log('Headers:', req.headers);
+    console.log('Body:', req.body);
+    console.log('Received DTO:', createPaymentDto);
+    console.log('Files:', files);
+    
+    // Pasamos el archivo al servicio (si existe)
+    const file = files && files.length > 0 ? files[0] : undefined;
+    return this.paymentsService.create(createPaymentDto, file);
   }
 
   @Get()

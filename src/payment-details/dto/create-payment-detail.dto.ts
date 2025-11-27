@@ -1,4 +1,5 @@
-import { IsInt, IsNumber, IsBoolean } from 'class-validator';
+import { IsInt, IsNumber, IsBoolean, IsEnum, IsOptional } from 'class-validator';
+import { PaymentStatus } from '../../common/enums/payment-status.enum';
 
 export class CreatePaymentDetailsDto {
   @IsInt()
@@ -37,8 +38,9 @@ export class CreatePaymentDetailsDto {
   @IsInt()
   idConsumeDetails: number;
 
-  @IsInt()
-  status: number;
+  @IsEnum(PaymentStatus)
+  @IsOptional()
+  status: PaymentStatus;
 
   @IsBoolean()
   checked: boolean;

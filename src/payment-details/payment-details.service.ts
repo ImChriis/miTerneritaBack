@@ -14,7 +14,7 @@ import { Ticket } from '../tickets/entities/ticket.entity';
 import { ConsumeDetails } from '../consumeDetails/entities/consumeDetail.entity';
 import { CreatePaymentDetailsDto } from './dto/create-payment-detail.dto';
 import { UpdatePaymentDetailsStatusDto } from './dto/update-payment-detail-status.dto';
-import { MailService } from '../mail/mail.service';
+import { PaymentStatus } from '../common/enums/payment-status.enum';
 
 @Injectable()
 export class PaymentDetailsService {
@@ -38,8 +38,6 @@ export class PaymentDetailsService {
 
     @InjectRepository(ConsumeDetails)
     private consumeDetailsRepository: Repository<ConsumeDetails>,
-
-    private readonly mailService: MailService,
   ) {}
 
   async create(
@@ -53,7 +51,7 @@ export class PaymentDetailsService {
       idConsumeDetails,
       precio : price,
       checked = false,
-      status = 0,
+      status = PaymentStatus.PENDING,
       quantity = 1,
     } = createPaymentDetailsDto;
 
@@ -134,9 +132,6 @@ export class PaymentDetailsService {
 
       const savedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
 
-      // Enviar QR por cada entrada
-      await this.mailService.sendTicketScannedConfirmation([savedPaymentDetails]);
-
       paymentDetailsList.push(savedPaymentDetails);
     }
 
@@ -154,16 +149,10 @@ export class PaymentDetailsService {
     if (!paymentDetails) {
       throw new NotFoundException('Detalle de pago no encontrado');
     }
-
-    const shouldSendEmail =
-      !paymentDetails.checked && updateStatusDto.checked === true;
       
     paymentDetails.checked = updateStatusDto.checked;
     const updatedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
 
-    if (shouldSendEmail) {
-      await this.mailService.sendTicketScannedConfirmation([updatedPaymentDetails]);
-    }
     return updatedPaymentDetails;
   }
 

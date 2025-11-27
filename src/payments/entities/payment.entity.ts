@@ -11,6 +11,7 @@ import { User } from '../../users/entities/user.entity';
 import { Event } from '../../events/entities/event.entity';
 import { ConsumeDetails } from '../../consumeDetails/entities/consumeDetail.entity';
 import { PaymentDetails } from '../../payment-details/entities/paymentDetail.entity';
+import { PaymentStatus } from '../../common/enums/payment-status.enum';
 
 @Entity('payment')
 export class Payment {
@@ -74,7 +75,7 @@ export class Payment {
   @Column('decimal', { precision: 15, scale: 2, nullable: true })
   montoDolar: number;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ length: 255 })
   comprobante: string;
 
   @Column({ length: 100, nullable: true })
@@ -86,8 +87,12 @@ export class Payment {
   @Column({ type: 'date', nullable: true })
   fechaTransferencia: Date;
 
-  @Column({ type: 'tinyint', width: 4, default: 0 })
-  status: number;
+  @Column({
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.PENDING,
+  })
+  status: PaymentStatus;
 
   @OneToMany(() => ConsumeDetails, (consumeDetails) => consumeDetails.idPayment, {
     cascade: true,

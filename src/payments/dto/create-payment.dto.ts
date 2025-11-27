@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { CreatePaymentDetailsDto } from '../../payment-details/dto/create-payment-detail.dto';
+import { PaymentStatus } from '../../common/enums/payment-status.enum';
 
 export class CreatePaymentDto {
   @IsInt()
@@ -102,8 +103,8 @@ export class CreatePaymentDto {
   @IsString()
   readonly fechaTransferencia?: string;
 
-  @IsInt()
-  readonly status: number;
+  @IsEnum(PaymentStatus)
+  readonly status: PaymentStatus;
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -10,6 +10,7 @@ import { Event } from '../../events/entities/event.entity';
 import { User } from '../../users/entities/user.entity';
 import { Ticket } from '../../tickets/entities/ticket.entity';
 import { ConsumeDetails } from '../../consumeDetails/entities/consumeDetail.entity';
+import { PaymentStatus } from '../../common/enums/payment-status.enum';
 
 @Entity('paymentdetails')
 export class PaymentDetails {
@@ -57,8 +58,12 @@ export class PaymentDetails {
   @JoinColumn({ name: 'idConsumeDetails' })
   idConsumeDetails: ConsumeDetails;
 
-  @Column({ name: 'status', type: 'tinyint' })
-  status: number;
+  @Column({
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.PENDING,
+  })
+  status: PaymentStatus;
 
   @Column({ name: 'checked', type: 'tinyint' })
   checked: boolean;
