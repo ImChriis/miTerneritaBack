@@ -23,31 +23,39 @@ export class CreatePaymentDto {
   readonly idConsumeDetails?: number;
 
   @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      return value.split(',').map((v) => parseInt(v.trim(), 10));
-    }
     if (Array.isArray(value)) {
-      return value;
+      return value.map(v => String(v)); // Convertir a string cada elemento
     }
-    return [value];
+    if (typeof value === 'string') {
+      // Si viene como string "[1, 2]", intentar parsear si es JSON válido, sino tratar como CSV
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed.map(v => String(v));
+      } catch (e) {}
+      return value.split(',').map(v => v.trim());
+    }
+    return [String(value)];
   })
   @IsArray()
-  @IsInt({ each: true })
-  readonly idTicket: number[];
+  @IsString({ each: true })
+  readonly idTicket: string[];
 
   @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      return value.split(',').map((v) => parseInt(v.trim(), 10));
-    }
     if (Array.isArray(value)) {
-      return value;
+      return value.map(v => String(v));
     }
-    return [value];
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed.map(v => String(v));
+      } catch (e) {}
+      return value.split(',').map(v => v.trim());
+    }
+    return [String(value)];
   })
   @IsArray()
-  @IsInt({ each: true })
-  @Min(1, { each: true })
-  readonly ticketNum: number[];
+  @IsString({ each: true })
+  readonly ticketNum: string[];
 
   @IsString()
   readonly noDocumento?: string;

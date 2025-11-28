@@ -10,6 +10,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Event } from '../../events/entities/event.entity';
 import { ConsumeDetails } from '../../consumeDetails/entities/consumeDetail.entity';
+import { Ticket } from '../../tickets/entities/ticket.entity';
 import { PaymentDetails } from '../../payment-details/entities/paymentDetail.entity';
 import { PaymentStatus } from '../../common/enums/payment-status.enum';
 
@@ -105,4 +106,10 @@ export class Payment {
   @Column({default: false})
   isDeleted: boolean;
 
+  @Column({ type: 'varchar', length: 255, default: '1' })
+  ticketNum: string;
+
+  @ManyToOne(() => Ticket, { nullable: true })
+  @JoinColumn({ name: 'idTicket' })
+  idTicket: Ticket;
 }

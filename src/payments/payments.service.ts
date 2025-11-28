@@ -72,16 +72,22 @@ export class PaymentsService {
       status,
     } = createPaymentDto;
 
-    // Garantizar que sean arrays (defensa contra problemas de transformación)
+    // Garantizar que sean arrays de strings
     const ticketsIds = Array.isArray(idTicket) ? idTicket : [idTicket];
     const ticketsQuantities = Array.isArray(ticketNum) ? ticketNum : [ticketNum];
 
     // Validar arrays
-    // if (ticketsIds.length !== ticketsQuantities.length) {
-    //   throw new BadRequestException('La cantidad de tickets y cantidades no coinciden');
-    // }
+    if (ticketsIds.length !== ticketsQuantities.length) {
+      throw new BadRequestException('La cantidad de tickets y cantidades no coinciden');
+    }
 
-    const totalTickets = ticketsQuantities.reduce((a, b) => Number(a) + Number(b), 0);
+    // Calcular total de tickets (parseando los strings a números)
+    const totalTickets = ticketsQuantities.reduce((a, b) => {
+        // Limpiar string de posibles corchetes si vienen mal formados "[1]"
+        const cleanA = String(a).replace(/[\[\]"']/g, '');
+        const cleanB = String(b).replace(/[\[\]"']/g, '');
+        return Number(cleanA) + Number(cleanB);
+    }, 0);
 
     // Validar cantidad de tickets
     if (totalTickets < 1 || totalTickets > 10) {
@@ -95,8 +101,18 @@ export class PaymentsService {
     const event = await this.eventsRepository.findOneBy({ idEvents });
     if (!event) throw new NotFoundException('Evento no encontrado');
 
+    const sanitizedTicketIds = ticketsIds.map(id => {
+      const n = Number(String(id).replace(/[\[\]"']/g, ''));
+      return isNaN(n) ? 0 : n;
+    });
+
+    this.logger.log(`Sanitized Ticket IDs for query: ${JSON.stringify(sanitizedTicketIds)}`);
+
     const tickets = await this.ticketsRepository.find({
-      where: { idTicket: In(ticketsIds), event: { idEvents } },
+      where: { 
+        idTicket: In(sanitizedTicketIds), 
+        event: { idEvents } 
+      },
       relations: ['event'],
     });
 
@@ -111,7 +127,7 @@ export class PaymentsService {
 
     // Transacción para crear Payment y PaymentDetails
     return this.dataSource.transaction(async (manager) => {
-      // Sanitizar y preparar valores opcionales/fechas
+      // ... (funciones auxiliares parseDateSafe, etc. se mantienen igual)
       const parseDateSafe = (val: any): Date => {
         if (!val) return new Date();
         if (val instanceof Date && !isNaN(val.getTime())) return val;
@@ -168,6 +184,13 @@ export class PaymentsService {
         safeComprobante = fileName;
       }
 
+      // Preparar ticketNum como string JSON para guardar en BD
+      const ticketNumString = JSON.stringify(ticketsQuantities);
+      
+      // Obtener el primer ticket para la relación FK (limitación de la BD)
+      const firstTicketId = ticketsIds.length > 0 ? Number(String(ticketsIds[0]).replace(/[\[\]"']/g, '')) : null;
+      const mainTicket = firstTicketId ? ticketsMap.get(firstTicketId) : null;
+
       // Crear Payment
       const paymentData: any = {
         idUser: user,
@@ -183,6 +206,8 @@ export class PaymentsService {
         referencia: safeReferencia,
         fechaTransferencia: safeFechaTransferencia,
         status: PaymentStatus.PENDING,
+        ticketNum: ticketNumString, // Guardar array como string
+        idTicket: mainTicket, // Guardar relación al primer ticket
       };
       const payment = manager.create(Payment, paymentData);
 
@@ -190,8 +215,8 @@ export class PaymentsService {
 
       let calculatedTotal = 0;
       for (let i = 0; i < ticketsIds.length; i++) {
-        const tId = ticketsIds[i];
-        const qty = ticketsQuantities[i];
+        const tId = Number(String(ticketsIds[i]).replace(/[\[\]"']/g, ''));
+        const qty = Number(String(ticketsQuantities[i]).replace(/[\[\]"']/g, '')); // Limpiar y convertir
         const ticket = ticketsMap.get(tId);
         if (ticket) {
           calculatedTotal += ticket.price * qty;
@@ -206,8 +231,8 @@ export class PaymentsService {
       let currentTicketSeq = 1;
 
       for (let i = 0; i < ticketsIds.length; i++) {
-        const tId = ticketsIds[i];
-        const qty = ticketsQuantities[i];
+        const tId = Number(String(ticketsIds[i]).replace(/[\[\]"']/g, ''));
+        const qty = Number(String(ticketsQuantities[i]).replace(/[\[\]"']/g, '')); // Limpiar y convertir
         const ticket = ticketsMap.get(tId);
 
         if (!ticket) continue;
@@ -215,7 +240,7 @@ export class PaymentsService {
         const precioPorTicket = ticket.price;
         const totalBasePorTicket = precioPorTicket * ratio;
         const impuestoCalculadoPorTicket = 0; 
-        const totalPorTicket = precioPorTicket; // Debería ser precioPorTicket * ratio si totalGeneral es diferente? Asumimos precio lista.
+        const totalPorTicket = precioPorTicket; 
 
         for (let k = 0; k < qty; k++) {
           const paymentDetail = manager.create(PaymentDetails, {
@@ -256,7 +281,7 @@ export class PaymentsService {
       // Devolver el payment con los campos extra para el frontend
       return {
         ...savedPayment,
-        ticketNum: ticketNums,
+        ticketNum: JSON.stringify(ticketNums), // Devolver como string para coincidir con tipo
         cantidadTickets,
         noDocumento: savedPayment.noDocumento,
       };
@@ -301,21 +326,19 @@ export class PaymentsService {
     // Antes era solo desde PENDING, pero si se reactiva un pago rechazado, también debería enviarse?
     // Por ahora mantenemos la lógica de PENDING -> APPROVED, pero agregamos logs.
     if (updatePaymentStatusDto.status === PaymentStatus.APPROVED) {
-       if (prevStatus !== PaymentStatus.APPROVED) {
-          // Actualizar estado de los detalles y enviar correo con QRs
-          if (payment.paymentDetails && payment.paymentDetails.length > 0) {
-            this.logger.log(`Enviando correo de confirmación para pago ${id} con ${payment.paymentDetails.length} detalles`);
-            for (const detail of payment.paymentDetails) {
-              detail.status = PaymentStatus.APPROVED;
-            }
-            await this.paymentDetailsRepository.save(payment.paymentDetails);
-            
-            // Enviar correo con todos los tickets
-            await this.mailService.sendTicketScannedConfirmation(payment);
-          } else {
-             this.logger.warn(`Pago ${id} aprobado pero no tiene detalles de pago (tickets) asociados.`);
-          }
-       }
+      // Actualizar estado de los detalles y enviar correo con QRs
+      if (payment.paymentDetails && payment.paymentDetails.length > 0) {
+        this.logger.log(`Enviando correo de confirmación para pago ${id} con ${payment.paymentDetails.length} detalles`);
+        for (const detail of payment.paymentDetails) {
+          detail.status = PaymentStatus.APPROVED;
+        }
+        await this.paymentDetailsRepository.save(payment.paymentDetails);
+        
+        // Enviar correo con todos los tickets
+        await this.mailService.sendTicketScannedConfirmation(payment);
+      } else {
+          this.logger.warn(`Pago ${id} aprobado pero no tiene detalles de pago (tickets) asociados.`);
+      }
     }
 
     // Si el status cambió de 'Pendiente' a 'Aprobado' (Lógica original para crear el detalle resumen)
