@@ -7,7 +7,6 @@ import { PaymentDetails } from './entities/paymentDetails.entity';
 import { UsersModule } from '../users/users.module';
 import { EventsModule } from '../events/events.module';
 import { ConsumeDetailsModule } from '../consumeDetails/consumeDetails.module';
-import { TicketsModule } from '../tickets/tickets.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule } from '@nestjs/config';
 import { PaymentDetailsModule } from '../payment-details/payment-details.module';
@@ -18,7 +17,6 @@ import { PaymentDetailsModule } from '../payment-details/payment-details.module'
     forwardRef(() => UsersModule),
     forwardRef(() => EventsModule),
     forwardRef(() => ConsumeDetailsModule),
-    forwardRef(() => TicketsModule),
     PaymentDetailsModule,
     MailerModule,
     ConfigModule,

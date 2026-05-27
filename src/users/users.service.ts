@@ -1,69 +1,89 @@
-import {Injectable, NotFoundException, BadRequestException} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
-import { Role } from '../roles/entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  async findByCedula(cedula: string): Promise<User | null> {
-    return this.usersRepository.findOne({
-      where: { cedula },
-      relations: ['role'],
-    });
-  }
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-
-    @InjectRepository(Role)
-    private rolesRepository: Repository<Role>,
   ) {}
+
+  private async findRoleByName(name: string): Promise<{ idRol: number; name: string } | null> {
+    const rows = await this.usersRepository.manager.query(
+      'SELECT idRol, name FROM Roles WHERE name = ? LIMIT 1',
+      [name],
+    );
+    return rows[0] ?? null;
+  }
+
+  private async findRoleById(idRol: number): Promise<{ idRol: number; name: string } | null> {
+    const rows = await this.usersRepository.manager.query(
+      'SELECT idRol, name FROM Roles WHERE idRol = ? LIMIT 1',
+      [idRol],
+    );
+    return rows[0] ?? null;
+  }
+
+  async getRoleNameByIdRol(idRol?: number): Promise<string | null> {
+    if (!idRol) {
+      return null;
+    }
+    const role = await this.findRoleById(idRol);
+    return role ? role.name : null;
+  }
+
+  async getRoleByName(name: string): Promise<{ idRol: number; name: string } | null> {
+    return this.findRoleByName(name);
+  }
+
+  async findByCedula(cedula: string): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { cedula },
+    });
+  }
 
   async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { email },
-      relations: ['role'],
     });
   }
 
   async findById(id: number): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { id },
-      relations: ['role'],
     });
   }
 
   async create(
     createUserDto: CreateUserDto & { roleName?: string; status?: number },
   ): Promise<User> {
-    // Si viene roleName, buscar rol
-    let role: Role | null;
+    let roleId: number | undefined;
     if (createUserDto.roleName) {
-      role = await this.rolesRepository.findOne({
-        where: { name: createUserDto.roleName },
-      });
+      const role = await this.findRoleByName(createUserDto.roleName);
       if (!role) {
         throw new BadRequestException('Rol no encontrado');
       }
+      roleId = role.idRol;
     } else if (createUserDto.idRol) {
-      role = await this.rolesRepository.findOne({
-        where: { idRol: createUserDto.idRol },
-      });
+      const role = await this.findRoleById(createUserDto.idRol);
       if (!role) {
         throw new BadRequestException('Rol no encontrado');
       }
+      roleId = role.idRol;
     } else {
       throw new BadRequestException('Rol es requerido');
     }
 
+    const { roleName, ...userData } = createUserDto;
     const user = this.usersRepository.create({
-      ...createUserDto,
-      role: role,
-      status: createUserDto.status ?? 1,
+      ...userData,
+      idRol: roleId,
+      status: userData.status ?? 1,
     });
 
     return this.usersRepository.save(user);
@@ -72,7 +92,6 @@ export class UsersService {
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.usersRepository.findOne({
       where: { id },
-      relations: ['role'],
     });
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
@@ -83,13 +102,10 @@ export class UsersService {
     }
 
     if (updateUserDto.idRol) {
-      const role = await this.rolesRepository.findOne({
-        where: { idRol: updateUserDto.idRol },
-      });
+      const role = await this.findRoleById(updateUserDto.idRol);
       if (!role) {
         throw new BadRequestException('Rol no encontrado');
       }
-      user.role = role;
     }
 
     Object.assign(user, updateUserDto);
@@ -106,6 +122,47 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find({ relations: ['role'] });
+    return this.usersRepository.find();
+  }
+
+  async findAllWithRoleName(): Promise<Array<User & { roleName: string | null }>> {
+    const rows = await this.usersRepository.manager.query(
+      `SELECT
+        u.idUser as id,
+        u.name,
+        u.lastName,
+        u.cedula,
+        u.email,
+        u.phone,
+        u.status,
+        u.fechaRegistro,
+        u.idRol,
+        r.name as roleName
+      FROM Users u
+      LEFT JOIN Roles r ON r.idRol = u.idRol`,
+    );
+    return rows;
+  }
+
+  async findByIdWithRoleName(id: number): Promise<(User & { roleName: string | null }) | null> {
+    const rows = await this.usersRepository.manager.query(
+      `SELECT
+        u.idUser as id,
+        u.name,
+        u.lastName,
+        u.cedula,
+        u.email,
+        u.phone,
+        u.status,
+        u.fechaRegistro,
+        u.idRol,
+        r.name as roleName
+      FROM Users u
+      LEFT JOIN Roles r ON r.idRol = u.idRol
+      WHERE u.idUser = ?
+      LIMIT 1`,
+      [id],
+    );
+    return rows[0] ?? null;
   }
 }

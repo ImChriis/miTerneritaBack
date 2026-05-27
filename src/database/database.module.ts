@@ -2,9 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User } from '../users/entities/user.entity';
-import { Role } from '../roles/entities/role.entity';
 import { Event } from '../events/entities/event.entity';
-import { Ticket } from '../tickets/entities/ticket.entity';
 import { Food } from '../food/entities/food.entity';
 import { Drink } from '../drinks/entities/drink.entity';
 import { ConsumeDetails } from '../consumeDetails/entities/consumeDetail.entity';
@@ -29,9 +27,7 @@ import { Configuration } from '../configuration/entities/configuration.entity';
         database: configService.get<string>('DATABASE_NAME'),
         entities: [
           User,
-          Role,
           Event,
-          Ticket,
           Food,
           Drink,
           ConsumeDetails,
@@ -42,7 +38,7 @@ import { Configuration } from '../configuration/entities/configuration.entity';
           Configuration,
         ],
         synchronize: false, // En producción. debe ser false, en dev true si quieres auto crear tablas
-        logging: true,
+        logging: configService.get<string>('NODE_ENV') === 'development',
       }),
     }),
   ],

@@ -9,19 +9,19 @@ import {
 
 export class CreateUserDto {
   @IsString()
-  readonly name: string;
+  readonly name?: string;
 
   @IsString()
-  readonly lastName: string;
+  readonly lastName?: string;
 
   @IsString()
-  readonly cedula: string;
+  readonly cedula?: string;
 
   @IsEmail()
-  readonly email: string;
+  readonly email?: string;
 
   @IsString()
-  readonly password: string;
+  readonly password?: string;
 
   @IsOptional()
   @IsString()
@@ -30,8 +30,8 @@ export class CreateUserDto {
   @IsInt()
   @Min(0)
   @Max(1)
-  readonly status: number;
+  readonly status?: number;
 
   @IsInt()
-  readonly idRol: number;
+  readonly idRol?: number;
 }

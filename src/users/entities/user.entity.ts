@@ -2,45 +2,42 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
   Unique,
 } from 'typeorm';
-import { Role } from '../../roles/entities/role.entity';
 
 @Entity('Users')
 @Unique(['cedula'])
 @Unique(['email'])
+
 export class User {
   @PrimaryGeneratedColumn({ name: 'idUser' })
-  id: number;
+  id?: number;
 
   @Column({ length: 100 })
-  name: string;
+  name?: string;
 
   @Column({ length: 100 })
-  lastName: string;
+  lastName?: string;
 
   @Column({ length: 20 })
-  cedula: string;
+  cedula?: string;
 
   @Column({ length: 150 })
-  email: string;
+  email?: string;
 
   @Column({ length: 255 })
-  password: string;
+  password?: string;
 
   @Column({ length: 20, nullable: true })
-  phone: string;
+  phone?: string;
 
   @Column({ type: 'tinyint' })
-  status: number;
+  status?: number;
+
+  @Column({ name: 'idRol' })
+  idRol?: number;
 
   @CreateDateColumn({ name: 'fechaRegistro' })
-  fechaRegistro: Date;
-
-  @ManyToOne(() => Role)
-  @JoinColumn({ name: 'idRol' })
-  role: Role;
+  fechaRegistro?: Date;
 }

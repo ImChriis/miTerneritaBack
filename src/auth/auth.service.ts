@@ -4,18 +4,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { RolesService } from '../roles/roles.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from './dto/register-user.dto';
-import { last } from 'rxjs';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly rolesService: RolesService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -23,7 +20,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
-    const passwordValid = await bcrypt.compare(password, user.password);
+    const passwordValid = await bcrypt.compare(password, user.password!);
     if (!passwordValid) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -31,11 +28,12 @@ export class AuthService {
   }
 
   async login(user: any) {
-    const payload = { email: user.email, sub: user.id, role: user.role.name };
+    const roleName = await this.usersService.getRoleNameByIdRol(user.idRol);
+    const payload = { email: user.email, sub: user.id, role: roleName };
     return {
       name: user.name,
       email: user.email,
-      role: user.role.name,
+      role: roleName,
       lastName: user.lastName,
       cedula: user.cedula,
       phone: user.phone,
@@ -60,7 +58,7 @@ export class AuthService {
     try {
       const hashedPassword = await bcrypt.hash(registerUserDto.password, 10);
       // Buscar rol 'user' por nombre
-      const userRole = await this.rolesService.findByName('user');
+      const userRole = await this.usersService.getRoleByName('user');
       if (!userRole) {
         throw new BadRequestException('Rol "user" no encontrado.');
       }
@@ -69,7 +67,7 @@ export class AuthService {
         password: hashedPassword,
         roleName: 'user',
         status: 1,
-        idRol: userRole.idRol, 
+        idRol: userRole.idRol,
       });
       return user;
     } catch (error) {

@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { RolesModule } from './roles/roles.module';
 import { EventsModule } from './events/events.module';
-import { TicketsModule } from './tickets/tickets.module';
 import { FoodModule } from './food/food.module';
 import { DrinksModule } from './drinks/drinks.module';
 import { ConsumeDetailsModule } from './consumeDetails/consumeDetails.module';
@@ -14,7 +13,8 @@ import { PaymentMethodModule } from './payment-method/payment-method.module';
 import { CodeModule } from './code/code.module';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { MailService } from './mail/mail.service';
 import { MailController } from './mail/mail.controller'; 
 
@@ -23,9 +23,7 @@ import { MailController } from './mail/mail.controller';
     DatabaseModule,
     AuthModule,
     UsersModule,
-    RolesModule,
     EventsModule,
-    TicketsModule,
     FoodModule,
     DrinksModule,
     ConsumeDetailsModule,
@@ -34,6 +32,18 @@ import { MailController } from './mail/mail.controller';
     PaymentMethodModule,
     CodeModule,
     ConfigurationModule,
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: Number(configService.get<string>('THROTTLE_TTL') ?? 60),
+            limit: Number(configService.get<string>('THROTTLE_LIMIT') ?? 30),
+          },
+        ],
+      }),
+    }),
     MailerModule.forRoot({
       transport: {
         host: process.env.MAIL_HOST,  
@@ -51,7 +61,13 @@ import { MailController } from './mail/mail.controller';
     }),
   ],
   controllers: [MailController],
-  providers: [MailService],
+  providers: [
+    MailService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
   exports: [MailService],
 })
 export class AppModule {}

@@ -112,10 +112,11 @@ export class PaymentsService {
               idEvents: event.idEvents,
               idUser: user.id,
               idTicket: item.idTicket,
+              ticketNum: item.ticketNum ?? 1,
               precio: item.price,
               checked: false,
               status: 0,
-            });
+            }, manager);
           } else if (
             (item.detailType === 'food' && item.idFood) ||
             (item.detailType === 'drink' && item.idDrinks)
@@ -127,7 +128,7 @@ export class PaymentsService {
               foodAmount: item.foodAmount,
               drinksAmount: item.drinksAmount,
               totalConsume: item.totalConsume,  
-            });
+            }, manager);
           }
         }
       }

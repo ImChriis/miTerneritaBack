@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
-import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity';
+import { SendTicketConfirmationDto } from './dto/send-ticket-confirmation.dto';
 
 @Injectable()
 export class MailService {
@@ -12,16 +12,21 @@ export class MailService {
    * Envía un correo de confirmación cuando el ticket ha sido escaneado.
    * @param paymentDetail Detalle del pago escaneado.
    */
-  async sendTicketScannedConfirmation(paymentDetail: PaymentDetails) {
-    const userEmail = paymentDetail.idUser.email;
-    const userName = paymentDetail.idUser.name;
-    const eventName = paymentDetail.idEvent.name;
-    const ticketName = paymentDetail.idTicket.name;
-    const paymentId = paymentDetail.payment.idPayment;
-    const paymentDetailId = paymentDetail.idPaymentDetails;
+  async sendTicketScannedConfirmation(payload: SendTicketConfirmationDto) {
+    const {
+      userEmail,
+      userName,
+      eventName,
+      ticketQuantity,
+      paymentId,
+      paymentDetailId,
+      userId,
+      eventId,
+      idTicket,
+    } = payload;
 
     // Genera el QR usando el API externo (más simple y configurable)
-    const qrData = `PaymentDetailID:${paymentDetailId};PaymentID:${paymentId};User:${paymentDetail.idUser.id};Event:${paymentDetail.idEvent.idEvents};Ticket:${paymentDetail.idTicket.idTicket};Scanned:true`;
+    const qrData = `PaymentDetailID:${paymentDetailId};PaymentID:${paymentId};User:${userId};Event:${eventId};Ticket:${idTicket};Scanned:true`;
     const qrCodeImage = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
 
     try {
@@ -32,7 +37,7 @@ export class MailService {
         context: {
           userName: userName || 'usuario',
           eventName: eventName || 'evento',
-          ticketName: ticketName || 'ticket',
+          ticketQuantity,
           paymentId: paymentId || 'N/A',
           paymentDetailId: paymentDetailId || 'N/A',
           qrCodeImage,
@@ -40,7 +45,7 @@ export class MailService {
         },
       });
       this.logger.log(`Correo de confirmación enviado a ${userEmail} para PaymentDetail ID: ${paymentDetailId}`);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Error enviando correo de confirmación a ${userEmail}:`, error.stack);
       // No relanzar el error para no bloquear la lógica de negocio
     }

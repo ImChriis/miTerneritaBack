@@ -7,12 +7,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
-import { RolesModule } from '../roles/roles.module';
 
 @Module({
   imports: [
     UsersModule,
-    RolesModule,
     PassportModule,
     ConfigModule,
     JwtModule.registerAsync({
@@ -20,7 +18,8 @@ import { RolesModule } from '../roles/roles.module';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') },
+        // cast to any to satisfy JwtModule types when env var may be undefined
+        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') as any },
       }),
     }),
   ],

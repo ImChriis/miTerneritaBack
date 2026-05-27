@@ -28,7 +28,7 @@ export class UsersController {
   @Get()
   @Roles('admin')
   async findAll(): Promise<UserResponseDto[]> {
-    const users = await this.usersService.findAll();
+    const users = await this.usersService.findAllWithRoleName();
     return users.map(
       (user) =>
         new UserResponseDto({
@@ -40,15 +40,29 @@ export class UsersController {
           phone: user.phone,
           status: user.status,
           fechaRegistro: user.fechaRegistro,
-          roleName: user.role.name,
+          roleName: user.roleName ?? '',
         }),
     );
   }
 
   // Usuario puede ver su propio perfil
   @Get('profile')
-  async getProfile(@Request() req): Promise<UserResponseDto> {
-    const user = await this.usersService.findById(req.user.userId);
+  async getProfile(@Request() req) {
+    const user = await this.usersService.findByIdWithRoleName(req.user.userId);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+  }
+
+  // Admin puede actualizar cualquier usuario
+  @Put(':id')
+  @Roles('admin')
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<UserResponseDto> {
+    await this.usersService.update(id, updateUserDto);
+    const user = await this.usersService.findByIdWithRoleName(id);
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
@@ -61,28 +75,7 @@ export class UsersController {
       phone: user.phone,
       status: user.status,
       fechaRegistro: user.fechaRegistro,
-      roleName: user.role.name,
-    });
-  }
-
-  // Admin puede actualizar cualquier usuario
-  @Put(':id')
-  @Roles('admin')
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateUserDto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
-    const user = await this.usersService.update(id, updateUserDto);
-    return new UserResponseDto({
-      id: user.id,
-      name: user.name,
-      lastName: user.lastName,
-      cedula: user.cedula,
-      email: user.email,
-      phone: user.phone,
-      status: user.status,
-      fechaRegistro: user.fechaRegistro,
-      roleName: user.role.name,
+      roleName: user.roleName ?? '',
     });
   }
 

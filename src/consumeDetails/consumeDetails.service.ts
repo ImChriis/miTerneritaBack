@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import { ConsumeDetails } from './entities/consumeDetail.entity';
 import { Food } from '../food/entities/food.entity';
 import { Drink } from '../drinks/entities/drink.entity';
@@ -29,8 +29,23 @@ export class ConsumeDetailsService {
 
   async create(
     createConsumeDetailDto: CreateConsumeDetailDto,
+    manager?: EntityManager,
   ): Promise<ConsumeDetails> {
     const { idFood, idDrinks, idPayment, totalConsume } = createConsumeDetailDto;
+    const qty = totalConsume ?? 0;
+
+    const consumeDetailsRepository = manager
+      ? manager.getRepository(ConsumeDetails)
+      : this.consumeDetailsRepository;
+    const foodRepository = manager
+      ? manager.getRepository(Food)
+      : this.foodRepository;
+    const drinkRepository = manager
+      ? manager.getRepository(Drink)
+      : this.drinkRepository;
+    const paymentRepository = manager
+      ? manager.getRepository(Payment)
+      : this.paymentRepository;
 
     // Es completamente opcional tener idFood o idDrink
 
@@ -40,7 +55,7 @@ export class ConsumeDetailsService {
       );
     }
 
-    const payment = await this.paymentRepository.findOne({
+    const payment = await paymentRepository.findOne({
       where: { idPayment: idPayment },
     });
     if (!payment) {
@@ -51,27 +66,27 @@ export class ConsumeDetailsService {
     let drink: Drink | null = null;
 
     if (idFood) {
-      food = await this.foodRepository.findOne({ where: { idFood: idFood } });
+      food = await foodRepository.findOne({ where: { idFood: idFood } });
       if (!food) {
         throw new NotFoundException('Alimento no encontrado');
       }
     }
 
     if (idDrinks) {
-      drink = await this.drinkRepository.findOne({ where: { idDrinks: idDrinks } });
+      drink = await drinkRepository.findOne({ where: { idDrinks: idDrinks } });
       if (!drink) {
         throw new NotFoundException('Bebida no encontrada');
       }
     }
 
-    const consumeDetails = this.consumeDetailsRepository.create({
+    const consumeDetails = consumeDetailsRepository.create({
       idFood: food ?? undefined,
       idDrinks: drink ?? undefined,
       idPayment: payment,
-      totalConsume: (food ? food.price : 0) * totalConsume + (drink ? drink.price : 0) * totalConsume,
+      totalConsume: (food ? food.price : 0) * qty + (drink ? drink.price : 0) * qty,
     });
 
-    return this.consumeDetailsRepository.save(consumeDetails);
+    return consumeDetailsRepository.save(consumeDetails);
   }
 
   async findAll(): Promise<ConsumeDetails[]> {

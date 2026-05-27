@@ -23,5 +23,5 @@ export class CreateConsumeDetailDto {
 
   @IsNotEmpty()
   @IsNumber()
-  totalConsume: number;
+  totalConsume?: number;
 }

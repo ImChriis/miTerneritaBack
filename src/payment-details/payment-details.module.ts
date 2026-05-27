@@ -6,7 +6,6 @@ import { PaymentDetails } from './entities/paymentDetail.entity';
 import { PaymentsModule } from '../payments/payments.module';
 import { EventsModule } from '../events/events.module';
 import { UsersModule } from '../users/users.module';
-import { TicketsModule } from '../tickets/tickets.module';
 import { ConsumeDetailsModule } from '../consumeDetails/consumeDetails.module';
 import { MailModule } from '../mail/mail.module'; 
 
@@ -16,7 +15,6 @@ import { MailModule } from '../mail/mail.module';
     forwardRef(() => PaymentsModule),
     forwardRef(() => EventsModule),
     forwardRef(() => UsersModule),
-    forwardRef(() => TicketsModule),
     forwardRef(() => ConsumeDetailsModule),
     MailModule, 
   ],

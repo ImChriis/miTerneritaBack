@@ -12,17 +12,17 @@ import {
 export class CreateEventDto {
   @IsString()
   @IsNotEmpty()
-  readonly name: string;
+  readonly name?: string;
 
   @IsString()
   @IsOptional()
   readonly description?: string;
 
   @IsDateString()
-  readonly date: string;
+  readonly date?: string;
 
   @IsDateString()
-  readonly time: string;
+  readonly time?: string;
 
   @IsString()
   @IsOptional()
@@ -30,7 +30,7 @@ export class CreateEventDto {
 
   @IsInt()
   @Min(1)
-  readonly capacity: number;
+  readonly capacity?: number;
 
   @IsString()
   @IsOptional()
@@ -43,5 +43,5 @@ export class CreateEventDto {
   readonly imageS?: string;
 
   @IsInt()
-  readonly status: number;
+  readonly status?: number;
 }

@@ -25,10 +25,16 @@ export class EventsController {
     return this.eventsService.findAll();
   }
 
+  @Get('tickets')
+  async findTicketOptions() {
+    return this.eventsService.findTicketOptions();
+  }
+
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.eventsService.findOne(id);
   }
+
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)

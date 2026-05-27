@@ -1,5 +1,6 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { MailService } from './mail.service';
+import { SendTicketConfirmationDto } from './dto/send-ticket-confirmation.dto';
 
 @Controller('mail')
 export class MailController {
@@ -7,9 +8,8 @@ export class MailController {
 
   @Post('send-ticket-confirmation')
   async sendTicketScannedConfirmation(
-    @Body() paymentDetail: any // Use 'any' or define a DTO matching PaymentDetails
+    @Body() payload: SendTicketConfirmationDto,
   ) {
-      return await this.mailService.sendTicketScannedConfirmation(paymentDetail);
-    
+      return await this.mailService.sendTicketScannedConfirmation(payload);
   }
 }

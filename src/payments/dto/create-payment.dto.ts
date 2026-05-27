@@ -6,39 +6,58 @@ import {
   IsArray,
   ValidateNested,
   Min,
-  ArrayMinSize,
+  IsOptional,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class ConsumeItemDto {
-  @IsString()
-  detailType: 'ticket' | 'food' | 'drink';
+enum ConsumeDetailType {
+  Ticket = 'ticket',
+  Food = 'food',
+  Drink = 'drink',
+}
 
+class ConsumeItemDto {
+  @IsEnum(ConsumeDetailType)
+  detailType: ConsumeDetailType;
+
+  @ValidateIf((item) => item.detailType !== ConsumeDetailType.Ticket)
   @IsInt()
   @Min(1)
   totalConsume: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  price: number;
+  price?: number;
 
+  @ValidateIf((item) => item.detailType === ConsumeDetailType.Food)
   @IsInt()
   @Min(1)
   foodAmount: number;
 
+  @ValidateIf((item) => item.detailType === ConsumeDetailType.Drink)
   @IsInt()
   @Min(1)
   drinksAmount: number;
 
   // IDs for each type
+  @ValidateIf((item) => item.detailType === ConsumeDetailType.Ticket)
   @IsInt()
   idTicket?: number;
 
+  @ValidateIf((item) => item.detailType === ConsumeDetailType.Food)
   @IsInt()
   idFood?: number;
 
+  @ValidateIf((item) => item.detailType === ConsumeDetailType.Drink)
   @IsInt()
   idDrinks?: number;
+
+  @ValidateIf((item) => item.detailType === ConsumeDetailType.Ticket)
+  @IsInt()
+  @Min(1)
+  ticketNum?: number;
 }
 
 export class CreatePaymentDto {
@@ -48,6 +67,7 @@ export class CreatePaymentDto {
   @IsInt()
   readonly idEvents: number;
 
+  @IsOptional()
   @IsInt()
   readonly idConsumeDetails?: number;
 
@@ -108,9 +128,11 @@ export class CreatePaymentDto {
   @IsString()
   readonly fechaTransferencia?: string;
 
+  @IsOptional()
   @IsInt()
   readonly status: number;
 
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ConsumeItemDto)

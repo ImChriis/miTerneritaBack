@@ -12,7 +12,6 @@ export class ConfigurationService {
   ) {}
 
   async getConfiguration(): Promise<Configuration> {
-    // Asumimos que solo hay un registro de configuración
     const config = await this.configurationRepository.findOne({ where: {} });
     if (!config) {
       throw new NotFoundException('Configuración no encontrada');

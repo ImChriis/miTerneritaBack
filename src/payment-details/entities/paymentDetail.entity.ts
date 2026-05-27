@@ -8,7 +8,6 @@ import {
 import { Payment } from '../../payments/entities/payment.entity';
 import { Event } from '../../events/entities/event.entity';
 import { User } from '../../users/entities/user.entity';
-import { Ticket } from '../../tickets/entities/ticket.entity';
 import { ConsumeDetails } from '../../consumeDetails/entities/consumeDetail.entity';
 
 @Entity('PaymentDetails')
@@ -49,9 +48,8 @@ export class PaymentDetails {
   @Column({ name: 'totalDolarEvento', type: 'decimal', precision: 15, scale: 2, nullable: true }) // Nullable por impuesto x
   totalDolarEvento: number;
 
-  @ManyToOne(() => Ticket)
-  @JoinColumn({ name: 'idTicket' })
-  idTicket: Ticket;
+  @Column({ name: 'idTicket', type: 'int' })
+  idTicket: number;
 
   @ManyToOne(() => ConsumeDetails, { nullable: true })
   @JoinColumn({ name: 'idConsumeDetails' })
