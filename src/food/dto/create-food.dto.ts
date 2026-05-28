@@ -8,9 +8,10 @@ import {
 } from 'class-validator';
 
 export class CreateFoodDto {
+
   @IsString()
   @IsNotEmpty()
-  readonly name: string;
+  readonly description: string;
 
   @IsNumber()
   @Min(0)
@@ -20,4 +21,5 @@ export class CreateFoodDto {
   @Min(0)
   @Max(1)
   readonly status: number;
+
 }

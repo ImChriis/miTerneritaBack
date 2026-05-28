@@ -15,7 +15,7 @@ export class EventsService {
     @InjectRepository(Event)
     private eventsRepository: Repository<Event>,
   ) {}
-
+ 
   async create(createEventDto: CreateEventDto): Promise<Event> {
     const event = this.eventsRepository.create(createEventDto);
     return this.eventsRepository.save(event);

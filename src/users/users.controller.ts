@@ -52,6 +52,17 @@ export class UsersController {
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
+    return new UserResponseDto({
+      id: user.id,
+      name: user.name,
+      lastName: user.lastName,
+      cedula: user.cedula,
+      email: user.email,
+      phone: user.phone,
+      status: user.status,
+      fechaRegistro: user.fechaRegistro,
+      roleName: user.roleName ?? '',
+    });
   }
 
   // Admin puede actualizar cualquier usuario

@@ -10,7 +10,7 @@ import {
 export class CreateDrinkDto {
   @IsString()
   @IsNotEmpty()
-  readonly name: string;
+  readonly description: string;
 
   @IsNumber()
   @Min(0)

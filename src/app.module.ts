@@ -17,9 +17,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { MailService } from './mail/mail.service';
 import { MailController } from './mail/mail.controller'; 
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [ ConfigModule.forRoot({ isGlobal: true }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'src', 'assets'),
+      serveRoot: '/assets',
+    }),
     DatabaseModule,
     AuthModule,
     UsersModule,

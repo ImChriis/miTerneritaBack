@@ -24,6 +24,18 @@ export class Event {
   capacity: number;
 
   @Column({ length: 255, nullable: true })
+  flyer: string;
+
+  @Column({ length: 255, nullable: true })
+  image1: string;
+
+  @Column({ length: 255, nullable: true })
+  image2: string;
+
+  @Column({ length: 255, nullable: true })
+  image3: string;
+
+  @Column({ length: 255, nullable: true })
   imageL: string;
 
   @Column({ length: 255, nullable: true })

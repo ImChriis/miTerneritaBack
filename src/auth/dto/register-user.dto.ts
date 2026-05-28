@@ -7,8 +7,10 @@ import {
 } from 'class-validator';
 
 export class RegisterUserDto {
+
   @IsString()
   readonly phone?: string;
+  
   @IsString()
   readonly name: string;
 

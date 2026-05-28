@@ -10,7 +10,7 @@ import {
 export class UpdateDrinkDto {
   @IsOptional()
   @IsString()
-  readonly name?: string;
+  readonly description?: string;
 
   @IsOptional()
   @IsNumber()

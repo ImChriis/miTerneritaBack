@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('Drinks')
 export class Drink {
+
   @PrimaryGeneratedColumn({ name: 'idDrinks' })
   idDrinks: number;
 
@@ -13,4 +14,5 @@ export class Drink {
 
   @Column('tinyint')
   status: number;
+  
 }
