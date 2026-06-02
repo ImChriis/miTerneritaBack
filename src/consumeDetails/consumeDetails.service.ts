@@ -32,7 +32,6 @@ export class ConsumeDetailsService {
     manager?: EntityManager,
   ): Promise<ConsumeDetails> {
     const { idFood, idDrinks, idPayment, totalConsume } = createConsumeDetailDto;
-    const qty = totalConsume ?? 0;
 
     const consumeDetailsRepository = manager
       ? manager.getRepository(ConsumeDetails)
@@ -83,7 +82,9 @@ export class ConsumeDetailsService {
       idFood: food ?? undefined,
       idDrinks: drink ?? undefined,
       idPayment: payment,
-      totalConsume: (food ? food.price : 0) * qty + (drink ? drink.price : 0) * qty,
+      foodAmount: createConsumeDetailDto.foodAmount ?? 0,
+      drinksAmount: createConsumeDetailDto.drinksAmount ?? 0,
+      totalConsume: totalConsume ?? 0,
     });
 
     return consumeDetailsRepository.save(consumeDetails);

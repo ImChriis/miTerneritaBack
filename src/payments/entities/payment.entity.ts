@@ -5,7 +5,6 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
-  CreateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Event } from '../../events/entities/event.entity';
@@ -24,10 +23,6 @@ export class Payment {
   @ManyToOne(() => Event, { eager: false })
   @JoinColumn({ name: 'idEvents' })
   idEvents: Event;
-
-  @ManyToOne(() => ConsumeDetails, { eager: false })
-  @JoinColumn({ name: 'idConsumeDetails' })
-  idConsumeDetails: ConsumeDetails;
 
   @Column({ length: 100, nullable: true })
   noDocumento: string;

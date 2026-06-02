@@ -20,9 +20,34 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { existsSync } from 'fs';
+import { basename, extname, join } from 'path';
 
 const uploadsDir = join(process.cwd(), 'src', 'assets', 'img');
+
+const getSafeBaseName = (value: string, fallback: string) => {
+  const normalized = value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-');
+
+  return normalized || fallback;
+};
+
+const getUniqueFilename = (base: string, ext: string) => {
+  let candidate = `${base}${ext}`;
+  let index = 1;
+
+  while (existsSync(join(uploadsDir, candidate))) {
+    candidate = `${base}_${index}${ext}`;
+    index += 1;
+  }
+
+  return candidate;
+};
 
 const webpFileFilter = (
   _req: unknown,
@@ -80,9 +105,17 @@ export class EventsController {
         storage: diskStorage({
           destination: uploadsDir,
           filename: (_req, file, callback) => {
-            const suffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-            const fileName = `${suffix}${extname(file.originalname).toLowerCase()}`;
-            callback(null, fileName);
+            const ext = extname(file.originalname).toLowerCase();
+            const fallbackBase = basename(file.originalname, ext);
+            const description =
+              typeof (_req as { body?: { description?: string } }).body
+                ?.description === 'string'
+                ? (_req as { body?: { description?: string } }).body
+                    ?.description ?? ''
+                : '';
+            const base = getSafeBaseName(description, fallbackBase);
+            const compositeBase = `${base}-${file.fieldname}`;
+            callback(null, getUniqueFilename(compositeBase, ext));
           },
         }),
         fileFilter: webpFileFilter,

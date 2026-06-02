@@ -1,7 +1,7 @@
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsOptional,
-  IsNumber,
   Min,
   Max,
   IsInt,
@@ -10,16 +10,24 @@ import {
 export class UpdateFoodDto {
   @IsOptional()
   @IsString()
+  @Type(() => String)
   readonly name?: string;
 
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(0)
+  @Type(() => Number)
   readonly price?: number;
 
   @IsOptional()
   @IsInt()
   @Min(0)
   @Max(1)
+  @Type(() => Number)
   readonly status?: number;
+
+  @IsOptional()
+  @IsString()
+  @Type(() => String)
+  readonly image?: string;
 }

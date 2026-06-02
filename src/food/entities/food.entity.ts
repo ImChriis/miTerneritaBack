@@ -14,4 +14,7 @@ export class Food {
 
   @Column('tinyint')
   status: number;
+
+  @Column({ length: 255 })
+  image: string;
 }
