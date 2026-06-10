@@ -19,13 +19,4 @@ export class UpdateConfigurationDto {
   @IsOptional()
   @IsString()
   readonly instagram?: string;
-
-  @IsOptional()
-  @IsString()
-  readonly BCV?: string;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  readonly Dolar?: number;
 }

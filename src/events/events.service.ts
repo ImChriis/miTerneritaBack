@@ -25,13 +25,13 @@ export class EventsService {
     return this.eventsRepository.find();
   }
 
-  async findTicketOptions(): Promise<
-    Array<{ idTicket: number; name: string; price: number; status: number }>
-  > {
-    return this.eventsRepository.manager.query(
-      'SELECT idTicket, name, price, status FROM ticket WHERE status = 1 ORDER BY idTicket',
-    );
-  }
+  // async findTicketOptions(): Promise<
+  //   Array<{ idTicket: number; name: string; price: number; status: number }>
+  // > {
+  //   return this.eventsRepository.manager.query(
+  //     'SELECT idTicket, name, price, status FROM ticket WHERE status = 1 ORDER BY idTicket',
+  //   );
+  // }
 
   async findOne(id: number): Promise<Event> {
     const event = await this.eventsRepository.findOne({ where: { idEvents: id } });

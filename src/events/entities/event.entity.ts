@@ -23,25 +23,22 @@ export class Event {
   @Column('int')
   capacity: number;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ length: 255})
   flyer: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ length: 255})
   image1: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ length: 255})
   image2: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ length: 255})
   image3: string;
-
-  @Column({ length: 255, nullable: true })
-  imageL: string;
-
-  @Column({ length: 255, nullable: true })
-  imageS: string;
 
   @Column('tinyint')
   status: number;
+
+  @Column('int')
+  consumo: number;
 
 }

@@ -1,35 +1,36 @@
-import { Type } from 'class-transformer';
 import {
   IsString,
   IsNotEmpty,
-  IsOptional,
   IsNumber,
   Min,
   Max,
   IsInt,
+  IsOptional,
 } from 'class-validator';
+import {Type} from 'class-transformer';
 
-export class CreateFoodDto {
+export class CreateTicketDto {
 
   @IsString()
   @IsNotEmpty()
   @Type(() => String)
-  readonly description?: string;
+  name?: string;
 
   @IsNumber()
   @Min(0)
+  @IsOptional()
   @Type(() => Number)
-  readonly price?: number;
+  price?: number;
 
+  @IsOptional()
   @IsInt()
   @Min(0)
   @Max(1)
   @Type(() => Number)
-  readonly status?: number;
+  status?: number;
 
-  @IsString()
   @IsOptional()
-  @Type(() => String)
-  readonly image?: string;
-
+  @IsInt()
+  @Type(() => Number)
+  idEvents?: number;
 }

@@ -122,11 +122,38 @@ export class FoodController {
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: uploadsDir,
+        filename: (_req, file, callback) => {
+          const ext = extname(file.originalname).toLowerCase();
+          const fallbackBase = basename(file.originalname, ext);
+          const description =
+            typeof (_req as { body?: { description?: string } }).body
+              ?.description === 'string'
+              ? (_req as { body?: { description?: string } }).body
+                  ?.description ?? ''
+              : '';
+          const base = getSafeBaseName(description, fallbackBase);
+          callback(null, getUniqueFilename(base, ext));
+        },
+      }),
+      fileFilter: webpFileFilter,
+    }),
+  )
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', new ParseIntPipe({ 
+      exceptionFactory: () => new BadRequestException('El ID proporcionado en la URL debe ser un número válido') 
+    })) id: number,
+    @UploadedFile() file: Express.Multer.File | undefined,
     @Body() updateFoodDto: UpdateFoodDto,
   ) {
-    return this.foodService.update(id, updateFoodDto);
+    const updateData = { ...updateFoodDto };
+    if (file) {
+      updateData.image = file.filename;
+    }
+    return this.foodService.update(id, updateData);
   }
 
   @Delete(':id')

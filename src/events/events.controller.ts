@@ -77,10 +77,10 @@ export class EventsController {
     return this.eventsService.findAll();
   }
 
-  @Get('tickets')
-  async findTicketOptions() {
-    return this.eventsService.findTicketOptions();
-  }
+  // @Get('tickets')
+  // async findTicketOptions() {
+  //   return this.eventsService.findTicketOptions();
+  // }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
@@ -157,11 +157,62 @@ export class EventsController {
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'flyer', maxCount: 1 },
+        { name: 'image1', maxCount: 1 },
+        { name: 'image2', maxCount: 1 },
+        { name: 'image3', maxCount: 1 },
+        { name: 'imageL', maxCount: 1 },
+        { name: 'imageS', maxCount: 1 },
+      ],
+      {
+        storage: diskStorage({
+          destination: uploadsDir,
+          filename: (_req, file, callback) => {
+            const ext = extname(file.originalname).toLowerCase();
+            const fallbackBase = basename(file.originalname, ext);
+            const description =
+              typeof (_req as { body?: { description?: string } }).body
+                ?.description === 'string'
+                ? (_req as { body?: { description?: string } }).body
+                    ?.description ?? ''
+                : '';
+            const base = getSafeBaseName(description, fallbackBase);
+            const compositeBase = `${base}-${file.fieldname}`;
+            callback(null, getUniqueFilename(compositeBase, ext));
+          },
+        }),
+        fileFilter: webpFileFilter,
+      },
+    ),
+  )
   async update(
     @Param('id', ParseIntPipe) id: number,
+    @UploadedFiles()
+    files: {
+      flyer?: Express.Multer.File[];
+      image1?: Express.Multer.File[];
+      image2?: Express.Multer.File[];
+      image3?: Express.Multer.File[];
+      imageL?: Express.Multer.File[];
+      imageS?: Express.Multer.File[];
+    },
     @Body() updateEventDto: UpdateEventDto,
   ) {
-    return this.eventsService.update(id, updateEventDto);
+    const flyer = files?.flyer?.[0]?.filename ?? updateEventDto.flyer;
+    const image1 = files?.image1?.[0]?.filename ?? updateEventDto.image1;
+    const image2 = files?.image2?.[0]?.filename ?? updateEventDto.image2;
+    const image3 = files?.image3?.[0]?.filename ?? updateEventDto.image3;
+
+    return this.eventsService.update(id, {
+      ...updateEventDto,
+      ...(flyer && { flyer }),
+      ...(image1 && { image1 }),
+      ...(image2 && { image2 }),
+      ...(image3 && { image3 }),
+    });
   }
 
   @Delete(':id')

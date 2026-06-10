@@ -19,9 +19,13 @@ import { MailService } from './mail/mail.service';
 import { MailController } from './mail/mail.controller'; 
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { TicketsModule } from './tickets/tickets.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [ ConfigModule.forRoot({ isGlobal: true }),
+  imports: [ 
+    ScheduleModule.forRoot(),
+    ConfigModule.forRoot({ isGlobal: true }),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'src', 'assets'),
       serveRoot: '/assets',
@@ -65,6 +69,7 @@ import { join } from 'path';
       },
       //
     }),
+    TicketsModule,
   ],
   controllers: [MailController],
   providers: [

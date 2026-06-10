@@ -4,17 +4,17 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 export class Food {
 
   @PrimaryGeneratedColumn({ name: 'idFood' })
-  idFood: number;
+  idFood?: number;
 
   @Column({ length: 150 })
-  description: string;
+  description?: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
-  price: number;
+  price?: number;
 
   @Column('tinyint')
-  status: number;
+  status?: number;
 
   @Column({ length: 255 })
-  image: string;
+  image?: string;
 }

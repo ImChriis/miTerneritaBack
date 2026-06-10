@@ -11,6 +11,7 @@ import { Code } from '../code/entities/code.entity';
 import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity';
 import { PaymentMethod } from '../payment-method/entities/paymentMethod.entity';
 import { Configuration } from '../configuration/entities/configuration.entity';
+import { Ticket } from '../tickets/entities/ticket.entity';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { Configuration } from '../configuration/entities/configuration.entity';
           Event,
           Food,
           Drink,
+          Ticket,
           ConsumeDetails,
           Payment,
           Code,

@@ -69,4 +69,10 @@ export class CreateEventDto {
   @IsInt()
   @Type(() => Number)
   readonly status?: number;
+
+  // Consumo del evento si lleva o no
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  readonly consumo?: number;
 }
