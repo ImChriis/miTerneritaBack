@@ -6,10 +6,10 @@ import { SendTicketConfirmationDto } from './dto/send-ticket-confirmation.dto';
 export class MailController {
   constructor(private readonly mailService: MailService) {}
 
-  @Post('send-ticket-confirmation')
-  async sendTicketScannedConfirmation(
+  @Post('send')
+  async sendMail(
     @Body() payload: SendTicketConfirmationDto,
   ) {
-      return await this.mailService.sendTicketScannedConfirmation(payload);
+      return await this.mailService.sendMail(payload);
   }
 }

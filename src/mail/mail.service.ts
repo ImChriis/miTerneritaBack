@@ -12,7 +12,7 @@ export class MailService {
    * Envía un correo de confirmación cuando el ticket ha sido escaneado.
    * @param paymentDetail Detalle del pago escaneado.
    */
-  async sendTicketScannedConfirmation(payload: SendTicketConfirmationDto) {
+  async sendMail(payload: SendTicketConfirmationDto) {
     const {
       userEmail,
       userName,

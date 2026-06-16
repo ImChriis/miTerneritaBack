@@ -31,34 +31,24 @@ export class TicketsService {
   }
 
   async findTicketsGroupedByEvent() {
-    // 1. Obtenemos todos los tickets con sus eventos correspondientes
     const tickets = await this.ticketsRepository.find({ relations: ['events'] });
-
-    // 2. Agrupamos los tickets utilizando el idEvents
     const groupedData = tickets.reduce((acc, ticket) => {
       const event = ticket.events;
       
       // Si el ticket no tiene un evento asignado, lo ignoramos para este endpoint
       if (!event) return acc;
 
-      // Si el evento aún no existe en nuestro objeto acumulador, lo creamos
       if (!acc[event.idEvents]) {
         acc[event.idEvents] = {
           ...event,
           tickets: [], // Inicializamos el arreglo de tickets para este evento
         };
       }
-
-      // Separamos la relación 'events' del ticket para no anidar datos redundantes en la respuesta
-      const { events, ...ticketInfo } = ticket;
       
-      // Agregamos la información del ticket al evento correspondiente
+      const { events, ...ticketInfo } = ticket;
       acc[event.idEvents].tickets.push(ticketInfo);
-
       return acc;
     }, {} as Record<number, any>);
-
-    // 3. Convertimos el objeto agrupado de vuelta a un arreglo
     return Object.values(groupedData);
   }
 
