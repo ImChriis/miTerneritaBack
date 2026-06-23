@@ -71,7 +71,7 @@ export class AuthService {
       });
       return user;
     } catch (error) {
-      // Manejo profesional de errores inesperados
+      console.error('Error al registrar el usuario:', error);
       if (error instanceof BadRequestException) {
         throw error;
       }
