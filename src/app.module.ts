@@ -16,16 +16,19 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { MailService } from './mail/mail.service';
-import { MailController } from './mail/mail.controller'; 
+import { MailController } from './mail/mail.controller';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TicketsModule } from './tickets/tickets.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [ 
+  imports: [
     ScheduleModule.forRoot(),
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ 
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'src', 'assets'),
       serveRoot: '/assets',
@@ -56,8 +59,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     }),
     MailerModule.forRoot({
       transport: {
-        host: process.env.MAIL_HOST,  
-        port: Number(process.env.MAIL_PORT),               
+        host: process.env.MAIL_HOST,
+        port: Number(process.env.MAIL_PORT),
         secure: false, // true para puerto 465 (SSL), false para 587 (TLS)
         auth: {
           user: process.env.MAIL_USER, // josecaherofficial@gmail.com
@@ -65,7 +68,7 @@ import { ScheduleModule } from '@nestjs/schedule';
         },
       },
       defaults: {
-        from: '"Mi Ternerita House" <${process.env.MAIL_FROM}>',  // From amigable para inbox
+        from: '"Mi Ternerita House" <${process.env.MAIL_FROM}>', // From amigable para inbox
       },
       //
     }),

@@ -20,7 +20,7 @@ import { Ticket } from '../tickets/entities/ticket.entity';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        type: 'mariadb',
+        type: 'mysql',
         host: configService.get<string>('DATABASE_HOST'),
         port: configService.get<number>('DATABASE_PORT'),
         username: configService.get<string>('DATABASE_USER'),
@@ -39,8 +39,16 @@ import { Ticket } from '../tickets/entities/ticket.entity';
           PaymentMethod,
           Configuration,
         ],
-        synchronize: false, // En producción. debe ser false, en dev true si quieres auto crear tablas
+        synchronize: false, // En producción debe ser false, en dev true si quieres auto crear tablas
         logging: configService.get<string>('NODE_ENV') === 'development',
+        ssl: {
+          rejectUnauthorized: true,
+        },
+        extra: {
+          ssl: {
+            rejectUnauthorized: true,
+          },
+        },
       }),
     }),
   ],
