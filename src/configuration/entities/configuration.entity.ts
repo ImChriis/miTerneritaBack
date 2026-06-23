@@ -14,4 +14,10 @@ export class Configuration {
   @Column({ length: 100, nullable: true })
   instagram: string;
 
+  @Column('decimal', { nullable: true })
+  tasaDolar: number;
+
+  @Column('decimal', { nullable: true })
+  BCV: number;
+
 }

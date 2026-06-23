@@ -32,4 +32,9 @@ export class CreateFoodDto {
   @Type(() => String)
   readonly image?: string;
 
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  readonly activo?: number;
+
 }

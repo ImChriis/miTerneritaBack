@@ -44,9 +44,14 @@ export class MailService {
           currentYear: new Date().getFullYear(),
         },
       });
-      this.logger.log(`Correo de confirmación enviado a ${userEmail} para PaymentDetail ID: ${paymentDetailId}`);
+      this.logger.log(
+        `Correo de confirmación enviado a ${userEmail} para PaymentDetail ID: ${paymentDetailId}`,
+      );
     } catch (error: any) {
-      this.logger.error(`Error enviando correo de confirmación a ${userEmail}:`, error.stack);
+      this.logger.error(
+        `Error enviando correo de confirmación a ${userEmail}:`,
+        error.stack,
+      );
       // No relanzar el error para no bloquear la lógica de negocio
     }
   }

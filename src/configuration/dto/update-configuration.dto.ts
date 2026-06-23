@@ -19,4 +19,12 @@ export class UpdateConfigurationDto {
   @IsOptional()
   @IsString()
   readonly instagram?: string;
+
+  @IsOptional()
+  @IsNumber()
+  readonly tasaDolar?: number;
+
+  @IsOptional()
+  @IsNumber()
+  readonly BCV?: number;
 }

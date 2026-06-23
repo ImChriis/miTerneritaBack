@@ -148,7 +148,6 @@ export class PaymentDetailsService {
     return savedPaymentDetails;
   }
 
-  // ...existing code...
 async updateStatus(
   id: number,
   updateStatusDto: UpdatePaymentDetailsStatusDto,
@@ -174,7 +173,7 @@ async updateStatus(
     if (!userEmail || !userId) {
       throw new BadRequestException('Usuario invalido para notificacion');
     }
-    await this.mailService.sendTicketScannedConfirmation({
+    await this.mailService.sendMail({
       userEmail,
       userName: updatedPaymentDetails.idUser.name,
       eventName: updatedPaymentDetails.idEvent.name,
@@ -189,7 +188,6 @@ async updateStatus(
 
   return updatedPaymentDetails;
 }
-// ...existing code...
 
   async findAll(
     page = 1,

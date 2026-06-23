@@ -99,4 +99,12 @@ export class PaymentsService {
       relations: ['idUser', 'idEvents', 'consumeDetails', 'paymentDetails'],
     });
   }
+
+  async remove(id: number): Promise<void> {
+    const payment = await this.paymentsRepository.findOne({ where: { idPayment: id } });
+    if (!payment) {
+      throw new NotFoundException('Pago no encontrado');
+    }
+    await this.paymentsRepository.softDelete(payment);
+  }
 }
