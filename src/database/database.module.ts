@@ -41,14 +41,7 @@ import { Ticket } from '../tickets/entities/ticket.entity';
         ],
         synchronize: false, // En producción debe ser false, en dev true si quieres auto crear tablas
         logging: configService.get<string>('NODE_ENV') === 'development',
-        ssl: {
-          rejectUnauthorized: true,
-        },
-        extra: {
-          ssl: {
-            rejectUnauthorized: true,
-          },
-        },
+        
       }),
     }),
   ],
