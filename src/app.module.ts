@@ -12,15 +12,13 @@ import { PaymentDetailsModule } from './payment-details/payment-details.module';
 import { PaymentMethodModule } from './payment-method/payment-method.module';
 import { CodeModule } from './code/code.module';
 import { ConfigurationModule } from './configuration/configuration.module';
-import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { MailService } from './mail/mail.service';
-import { MailController } from './mail/mail.controller';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TicketsModule } from './tickets/tickets.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -57,31 +55,8 @@ import { ScheduleModule } from '@nestjs/schedule';
         ],
       }),
     }),
-    MailerModule.forRoot({
-      transport: {
-        host: process.env.MAIL_HOST,
-        port: Number(process.env.MAIL_PORT),
-        secure: false, // true para puerto 465 (SSL), false para 587 (TLS)
-        auth: {
-          user: process.env.MAIL_USER, // josecaherofficial@gmail.com
-          pass: process.env.MAIL_PASSWORD, // smvt qult bmel uigc
-        },
-      },
-      defaults: {
-        from: '"Mi Ternerita House" <${process.env.MAIL_FROM}>', // From amigable para inbox
-      },
-      //
-    }),
+    MailModule,
     TicketsModule,
   ],
-  controllers: [MailController],
-  providers: [
-    MailService,
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
-  ],
-  exports: [MailService],
 })
 export class AppModule {}

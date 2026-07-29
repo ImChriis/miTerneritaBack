@@ -165,4 +165,24 @@ export class UsersService {
     );
     return rows[0] ?? null;
   }
+  async setResetToken(userId: number, hashedToken: string, expiresAt: Date) {
+  return this.usersRepository.update(userId, {
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: expiresAt,
+  });
+}
+
+async findByResetToken(hashedToken: string) {
+  return this.usersRepository.findOne({
+    where: { resetPasswordToken: hashedToken },
+  });
+}
+
+async updatePasswordAndClearToken(userId: number, hashedPassword: string) {
+  return this.usersRepository.update(userId, {
+    password: hashedPassword,
+    resetPasswordToken: null,
+    resetPasswordExpires: null,
+  });
+  }
 }

@@ -4,11 +4,17 @@ import { MailService } from './mail.service';
 import { join } from 'path';
 import { ConfigModule } from '@nestjs/config';
 import { HandlebarsAdapter } from './handlebars.adapter';
+import { MailController } from './mail.controller';
+
+const templateDir =
+  process.env.NODE_ENV === 'production'
+    ? join(__dirname, 'templates')
+    : join(process.cwd(), 'src', 'mail', 'templates');
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    MailerModule.forRoot({ 
+    MailerModule.forRoot({
       transport: {
         host: process.env.MAIL_HOST,
         port: Number(process.env.MAIL_PORT),
@@ -17,6 +23,9 @@ import { HandlebarsAdapter } from './handlebars.adapter';
           pass: process.env.MAIL_PASSWORD,
         },
         secure: false, // true for 465, false for other ports
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000, // 10 seconds
+        socketTimeout: 10000, // 10 seconds
       },
       defaults: {
         from: `"No Reply" <${process.env.MAIL_USER}>`,
@@ -26,13 +35,14 @@ import { HandlebarsAdapter } from './handlebars.adapter';
           process.env.NODE_ENV === 'production'
             ? join(__dirname, 'templates') // cuando corre desde dist/mail
             : join(process.cwd(), 'src', 'mail', 'templates'), // en dev lee desde src
-        adapter: new HandlebarsAdapter(),
+        adapter: new HandlebarsAdapter(templateDir),
         options: {
           strict: true,
         },
       },
     }),
   ],
+  controllers: [MailController],
   providers: [MailService],
   exports: [MailService],
 })

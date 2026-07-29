@@ -5,14 +5,19 @@ import {
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
+import { MailerService } from '@nestjs-modules/mailer';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly mailerService: MailerService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -79,5 +84,77 @@ export class AuthService {
     }
   }
 
-  // Aquí puedes agregar métodos para recuperación de contraseña
+  /**
+   * Paso 1: el usuario ingresa su correo.
+   * Generamos un token, lo guardamos (hasheado) con expiración,
+   * y enviamos el enlace de recuperación por correo.
+   */
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const user = await this.usersService.findByEmail(forgotPasswordDto.email);
+
+    // Respuesta genérica siempre, exista o no el correo (evita enumeración de usuarios)
+    const genericResponse = {
+      message:
+        'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.',
+    };
+
+    if (!user) {
+      return genericResponse;
+    }
+
+    // Código de 6 dígitos que se muestra al usuario (texto plano, va en el correo)
+    const code = crypto.randomInt(100000, 1000000).toString();
+    // Lo que guardamos en BD (nunca el código en texto plano)
+    const hashedToken = crypto.createHash('sha256').update(code).digest('hex');
+    // Vida corta: un código de 6 dígitos es más fácil de adivinar que un token largo,
+    // así que expira rápido (15 min) y además hay que combinarlo con el email al validar.
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.usersService.setResetToken(user.id!, hashedToken, expiresAt);
+
+    try {
+      await this.mailerService.sendMail({
+        to: user.email,
+        subject: 'Código para recuperar tu contraseña',
+        template: './forgot-password',
+        context: {
+          name: user.name,
+          code,
+          expiresInMinutes: 15,
+        },
+      });
+      
+    } catch (error) {
+      console.error('Error al enviar el correo de recuperación:', error);
+      throw new BadRequestException(
+        'No se pudo enviar el correo de recuperación. Intenta nuevamente más tarde.',
+      );
+    }
+
+    return genericResponse;
+  }
+
+  /**
+   * Paso 2: el usuario llega desde el link del correo con el token
+   * y envía su nueva contraseña.
+   */
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(resetPasswordDto.code)
+      .digest('hex');
+
+    const user = await this.usersService.findByResetToken(hashedToken);
+
+    if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+      throw new BadRequestException(
+        'El código es inválido o ha expirado. Solicita uno nuevo.',
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
+    await this.usersService.updatePasswordAndClearToken(user.id!, hashedPassword);
+
+    return { message: 'Tu contraseña ha sido actualizada correctamente.' };
+  }
 }

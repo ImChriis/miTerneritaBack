@@ -43,14 +43,14 @@ import { Ticket } from '../tickets/entities/ticket.entity';
         logging: configService.get<string>('NODE_ENV') === 'development',
         
         //Config para TiDB
-        ssl: {
-          rejectUnauthorized: true,
-        },
-        extra: {
-          ssl: {
-            rejectUnauthorized: true,
-          },
-        },
+        // ssl: {
+        //   rejectUnauthorized: true,
+        // },
+        // extra: {
+        //   ssl: {
+        //     rejectUnauthorized: true,
+        //   },
+        // },
       }),
     }),
   ],

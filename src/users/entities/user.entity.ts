@@ -40,4 +40,10 @@ export class User {
 
   @CreateDateColumn({ name: 'fechaRegistro' })
   fechaRegistro?: Date;
+
+  @Column({ type: 'varchar', nullable: true })
+  resetPasswordToken: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetPasswordExpires: Date | null;
 }
