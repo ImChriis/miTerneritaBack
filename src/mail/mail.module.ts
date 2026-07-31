@@ -23,9 +23,9 @@ const templateDir =
           pass: process.env.MAIL_PASSWORD,
         },
         secure: false, // true for 465, false for other ports
-        connectionTimeout: 10000, // 10 seconds
-        greetingTimeout: 10000, // 10 seconds
-        socketTimeout: 10000, // 10 seconds
+        connectionTimeout: 10000,
+        greetingTimeout: 10000, 
+        socketTimeout: 10000, 
       },
       defaults: {
         from: `"No Reply" <${process.env.MAIL_USER}>`,

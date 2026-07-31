@@ -36,6 +36,7 @@ export class AuthService {
     const roleName = await this.usersService.getRoleNameByIdRol(user.idRol);
     const payload = { email: user.email, sub: user.id, role: roleName };
     return {
+      id: user.id,
       name: user.name,
       email: user.email,
       role: roleName,

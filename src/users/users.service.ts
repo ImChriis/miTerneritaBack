@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -90,28 +90,40 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.usersRepository.findOne({
-      where: { id },
-    });
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
-
-    if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-    }
-
-    if (updateUserDto.idRol) {
-      const role = await this.findRoleById(updateUserDto.idRol);
-      if (!role) {
-        throw new BadRequestException('Rol no encontrado');
-      }
-    }
-
-    Object.assign(user, updateUserDto);
-
-    return this.usersRepository.save(user);
+  const user = await this.usersRepository.findOne({ where: { id } });
+  if (!user) {
+    throw new NotFoundException('Usuario no encontrado');
   }
+
+  if (updateUserDto.idRol) {
+    const role = await this.findRoleById(updateUserDto.idRol);
+    if (!role) {
+      throw new BadRequestException('Rol no encontrado');
+    }
+  }
+
+  const { id: _ignoredId, password, ...safeUpdateData } = updateUserDto;
+  Object.assign(user, safeUpdateData);
+
+  if (password) {
+    user.password = await bcrypt.hash(password, 10);
+  }
+
+  try {
+    return await this.usersRepository.save(user);
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      if (error.sqlMessage?.includes('cedula')) {
+        throw new ConflictException('Ya existe un usuario con esa cédula');
+      }
+      if (error.sqlMessage?.includes('email')) {
+        throw new ConflictException('Ya existe un usuario con ese email');
+      }
+      throw new ConflictException('Ese dato ya está en uso por otro usuario');
+    }
+    throw error;
+  }
+}
 
   async remove(id: number): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id } });
