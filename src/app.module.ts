@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
@@ -19,17 +19,23 @@ import { join } from 'path';
 import { TicketsModule } from './tickets/tickets.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MailModule } from './mail/mail.module';
+import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
+import { validateEnv } from './config/env.validation';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
-    ConfigModule.forRoot({ 
+    ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      validate: validateEnv,
     }),
+    // Se sirve únicamente la carpeta de imágenes. Antes se exponía todo
+    // src/assets, que incluía el volcado de la base de datos (ternera.sql).
+    // Las URLs públicas no cambian: siguen siendo /assets/img/<archivo>.
     ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'src', 'assets'),
-      serveRoot: '/assets',
+      rootPath: join(process.cwd(), 'src', 'assets', 'img'),
+      serveRoot: '/assets/img',
     }),
     DatabaseModule,
     AuthModule,
@@ -49,7 +55,10 @@ import { MailModule } from './mail/mail.module';
       useFactory: (configService: ConfigService) => ({
         throttlers: [
           {
-            ttl: Number(configService.get<string>('THROTTLE_TTL') ?? 60),
+            // THROTTLE_TTL se expresa en segundos en el .env, pero
+            // @nestjs/throttler v6 espera milisegundos. Sin esta conversion
+            // la ventana duraba 60 ms y el limite no se alcanzaba nunca.
+            ttl: Number(configService.get<string>('THROTTLE_TTL') ?? 60) * 1000,
             limit: Number(configService.get<string>('THROTTLE_LIMIT') ?? 30),
           },
         ],
@@ -58,5 +67,17 @@ import { MailModule } from './mail/mail.module';
     MailModule,
     TicketsModule,
   ],
+  providers: [
+    // ThrottlerModule ya estaba configurado, pero el guard nunca se registró,
+    // así que el rate limiting no se aplicaba a ninguna ruta (incluido /auth/login).
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(SecurityHeadersMiddleware).forRoutes('*');
+  }
+}

@@ -25,6 +25,10 @@ import { basename, extname, join } from 'path';
 
 const uploadsDir = join(process.cwd(), 'src', 'assets', 'img');
 
+// Limite de tamano por archivo. Sin esto multer acepta subidas de cualquier
+// tamano y las escribe en disco antes de que el controlador pueda rechazarlas.
+const uploadLimits = { fileSize: 5 * 1024 * 1024, files: 6 };
+
 const getSafeBaseName = (value: string, fallback: string) => {
   const normalized = value
     .toLowerCase()
@@ -119,6 +123,7 @@ export class EventsController {
           },
         }),
         fileFilter: webpFileFilter,
+        limits: uploadLimits,
       },
     ),
   )
@@ -185,6 +190,7 @@ export class EventsController {
           },
         }),
         fileFilter: webpFileFilter,
+        limits: uploadLimits,
       },
     ),
   )
