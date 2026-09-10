@@ -113,7 +113,7 @@ export class UsersService {
       throw new BadRequestException('Rol es requerido');
     }
 
-    const { roleName, ...userData } = createUserDto;
+    const { roleName: _roleName, ...userData } = createUserDto;
     const user = this.usersRepository.create({
       ...userData,
       idRol: roleId,
@@ -152,11 +152,12 @@ export class UsersService {
     try {
       return await this.usersRepository.save(user);
     } catch (error) {
-      if (error.code === 'ER_DUP_ENTRY') {
-        if (error.sqlMessage?.includes('cedula')) {
+      const dbError = error as { code?: string; sqlMessage?: string };
+      if (dbError.code === 'ER_DUP_ENTRY') {
+        if (dbError.sqlMessage?.includes('cedula')) {
           throw new ConflictException('Ya existe un usuario con esa cédula');
         }
-        if (error.sqlMessage?.includes('email')) {
+        if (dbError.sqlMessage?.includes('email')) {
           throw new ConflictException('Ya existe un usuario con ese email');
         }
         throw new ConflictException('Ese dato ya está en uso por otro usuario');

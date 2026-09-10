@@ -48,7 +48,7 @@ export class TicketsService {
           };
         }
 
-        const { events, ...ticketInfo } = ticket;
+        const { events: _events, ...ticketInfo } = ticket;
         acc[event.idEvents].tickets.push(ticketInfo);
         return acc;
       },
