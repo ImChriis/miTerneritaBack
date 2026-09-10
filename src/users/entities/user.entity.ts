@@ -6,7 +6,7 @@ import {
   Unique,
 } from 'typeorm';
 
-@Entity('Users')
+@Entity('users')
 @Unique(['cedula'])
 @Unique(['email'])
 
@@ -26,7 +26,10 @@ export class User {
   @Column({ length: 150 })
   email?: string;
 
-  @Column({ length: 255 })
+  // select: false -> nunca sale en un find() normal. Se estaba filtrando el
+  // hash en cada respuesta que incluyera la relacion idUser (pagos, detalles
+  // de pago...). Para el login hay que pedirla explicitamente con addSelect.
+  @Column({ length: 255, select: false })
   password?: string;
 
   @Column({ length: 20, nullable: true })
@@ -41,9 +44,9 @@ export class User {
   @CreateDateColumn({ name: 'fechaRegistro' })
   fechaRegistro?: Date;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, select: false })
   resetPasswordToken: string | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamp', nullable: true, select: false })
   resetPasswordExpires: Date | null;
 }

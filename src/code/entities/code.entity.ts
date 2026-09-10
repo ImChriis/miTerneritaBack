@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { Payment } from '../../payments/entities/payment.entity';
 
-@Entity('Code')
+@Entity('code')
 export class Code {
   @PrimaryGeneratedColumn({ name: 'idCode' })
   idCode: number;

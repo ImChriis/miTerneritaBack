@@ -10,7 +10,7 @@ import { Event } from '../../events/entities/event.entity';
 import { User } from '../../users/entities/user.entity';
 import { ConsumeDetails } from '../../consumeDetails/entities/consumeDetail.entity';
 
-@Entity('PaymentDetails')
+@Entity('paymentdetails')
 export class PaymentDetails {
   @PrimaryGeneratedColumn({ name: 'idPaymentDetails' })
   idPaymentDetails: number;
@@ -55,9 +55,15 @@ export class PaymentDetails {
   @JoinColumn({ name: 'idConsumeDetails' })
   idConsumeDetails: ConsumeDetails;
 
-  @Column({ name: 'status', type: 'tinyint' })
+  @Column({ name: 'status', type: 'tinyint', nullable: true, default: 0 })
   status: number;
 
-  @Column({ name: 'checked', type: 'tinyint' })
+  // La columna es tinyint y se usa como booleano. Declararla como 'boolean'
+  // hace que TypeORM convierta 0/1 <-> false/true en ambos sentidos, en vez
+  // de devolver un number con tipo TypeScript boolean.
+  @Column({ name: 'checked', type: 'boolean', default: false })
   checked: boolean;
+
+  @Column({ name: 'isDeleted', type: 'boolean', default: false })
+  isDeleted: boolean;
 }

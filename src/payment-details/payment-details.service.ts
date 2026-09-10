@@ -5,12 +5,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, EntityManager } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { PaymentDetails } from './entities/paymentDetail.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { Event } from '../events/entities/event.entity';
 import { User } from '../users/entities/user.entity';
 import { ConsumeDetails } from '../consumeDetails/entities/consumeDetail.entity';
+import { Ticket } from '../tickets/entities/ticket.entity';
 import { CreatePaymentDetailsDto } from './dto/create-payment-detail.dto';
 import { UpdatePaymentDetailsStatusDto } from './dto/update-payment-detail-status.dto';
 import { MailService } from '../mail/mail.service';
@@ -35,7 +36,8 @@ export class PaymentDetailsService {
     @InjectRepository(ConsumeDetails)
     private consumeDetailsRepository: Repository<ConsumeDetails>,
 
-    private readonly dataSource: DataSource,
+    @InjectRepository(Ticket)
+    private ticketsRepository: Repository<Ticket>,
 
     private readonly mailService: MailService,
   ) {}
@@ -68,11 +70,12 @@ export class PaymentDetailsService {
     const consumeDetailsRepository = manager
       ? manager.getRepository(ConsumeDetails)
       : this.consumeDetailsRepository;
+    const ticketsRepository = manager
+      ? manager.getRepository(Ticket)
+      : this.ticketsRepository;
     const paymentDetailsRepository = manager
       ? manager.getRepository(PaymentDetails)
       : this.paymentDetailsRepository;
-    const queryExecutor = manager ?? this.dataSource;
-
     const payment = await paymentRepository.findOne({
       where: { idPayment: idPayment },
     });
@@ -92,11 +95,11 @@ export class PaymentDetailsService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    const ticketRows = await queryExecutor.query(
-      'SELECT idTicket, name, price, status FROM ticket WHERE idTicket = ? LIMIT 1',
-      [idTicket],
-    );
-    const ticket = ticketRows[0];
+    // Antes esto era una consulta SQL cruda contra la tabla `ticket`, aunque
+    // ya existe la entidad Ticket con su repositorio.
+    const ticket = await ticketsRepository.findOne({
+      where: { idTicket },
+    });
     if (!ticket) {
       throw new NotFoundException('Ticket no encontrado');
     }
@@ -114,6 +117,7 @@ export class PaymentDetailsService {
       where: {
         payment: { idPayment: idPayment },
         idTicket: idTicket,
+        isDeleted: false,
       },
     });
     if (existing) {
@@ -122,8 +126,9 @@ export class PaymentDetailsService {
       );
     }
 
-    // Usar el precio del DTO o el precio del ticket si no se proporciona
-    const finalPrice = price ?? ticket.price;
+    // Usar el precio del DTO o el del ticket si no se proporciona. TypeORM
+    // devuelve las columnas decimal como string, de ahi el Number().
+    const finalPrice = price ?? Number(ticket.price);
 
     const paymentDetails = paymentDetailsRepository.create({
       payment,
@@ -153,7 +158,7 @@ async updateStatus(
   updateStatusDto: UpdatePaymentDetailsStatusDto,
 ): Promise<PaymentDetails> {
   const paymentDetails = await this.paymentDetailsRepository.findOne({
-    where: { idPaymentDetails: id },
+    where: { idPaymentDetails: id, isDeleted: false },
     relations: ['idUser', 'idEvent', 'payment'],
   });
   if (!paymentDetails) {
@@ -189,6 +194,52 @@ async updateStatus(
   return updatedPaymentDetails;
 }
 
+  /**
+   * Total de PaymentDetails registrados el día de hoy (cantidad + monto).
+   * paymentdetails no tiene columna de fecha propia, así que se usa la fecha
+   * del payment relacionado (payment.date).
+   */
+  async getTotalToday(): Promise<{
+    count: number;
+    totalAmount: number;
+  }> {
+    const rows = await this.paymentDetailsRepository.manager.query(
+      `SELECT
+        COUNT(*) as count,
+        COALESCE(SUM(pd.total), 0) as totalAmount
+      FROM paymentdetails pd
+      INNER JOIN payment p ON p.idPayment = pd.idPayment
+      WHERE DATE(p.date) = CURDATE()
+        AND pd.isDeleted = 0`,
+    );
+    const row = rows[0];
+    return {
+      count: Number(row.count),
+      totalAmount: Number(row.totalAmount),
+    };
+  }
+
+  /**
+   * Total de PaymentDetails en general (cantidad + monto), sin filtro de fecha.
+   */
+  async getTotalGeneral(): Promise<{
+    count: number;
+    totalAmount: number;
+  }> {
+    const rows = await this.paymentDetailsRepository.manager.query(
+      `SELECT
+        COUNT(*) as count,
+        COALESCE(SUM(total), 0) as totalAmount
+      FROM paymentdetails
+      WHERE isDeleted = 0`,
+    );
+    const row = rows[0];
+    return {
+      count: Number(row.count),
+      totalAmount: Number(row.totalAmount),
+    };
+  }
+
   async findAll(
     page = 1,
     limit = 20,
@@ -196,6 +247,8 @@ async updateStatus(
     const safePage = Math.max(page, 1);
     const safeLimit = Math.min(Math.max(limit, 1), 100);
     const [data, total] = await this.paymentDetailsRepository.findAndCount({
+      where: { isDeleted: false },
+      relations: ['payment', 'idEvent', 'idUser'],
       skip: (safePage - 1) * safeLimit,
       take: safeLimit,
       order: { idPaymentDetails: 'DESC' },
@@ -213,7 +266,7 @@ async updateStatus(
 
   async findOne(id: number): Promise<PaymentDetails> {
     const paymentDetails = await this.paymentDetailsRepository.findOne({
-      where: { idPaymentDetails: id },
+      where: { idPaymentDetails: id, isDeleted: false },
       relations: ['payment', 'idEvent', 'idUser', 'idConsumeDetails'],
     });
     if (!paymentDetails) {

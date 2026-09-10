@@ -15,7 +15,7 @@ export class UsersService {
 
   private async findRoleByName(name: string): Promise<{ idRol: number; name: string } | null> {
     const rows = await this.usersRepository.manager.query(
-      'SELECT idRol, name FROM Roles WHERE name = ? LIMIT 1',
+      'SELECT idRol, name FROM roles WHERE name = ? LIMIT 1',
       [name],
     );
     return rows[0] ?? null;
@@ -23,7 +23,7 @@ export class UsersService {
 
   private async findRoleById(idRol: number): Promise<{ idRol: number; name: string } | null> {
     const rows = await this.usersRepository.manager.query(
-      'SELECT idRol, name FROM Roles WHERE idRol = ? LIMIT 1',
+      'SELECT idRol, name FROM roles WHERE idRol = ? LIMIT 1',
       [idRol],
     );
     return rows[0] ?? null;
@@ -51,6 +51,18 @@ export class UsersService {
     return this.usersRepository.findOne({
       where: { email },
     });
+  }
+
+  /**
+   * Igual que findByEmail pero trayendo el hash de la contrasena, que la
+   * entidad marca con select: false. Solo para el login.
+   */
+  async findByEmailWithPassword(email: string): Promise<User | null> {
+    return this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.email = :email', { email })
+      .getOne();
   }
 
   async findById(id: number): Promise<User | null> {
@@ -90,7 +102,13 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-  const user = await this.usersRepository.findOne({ where: { id } });
+  // Se carga con la contrasena incluida: save() actualiza las columnas
+  // cargadas y no conviene dejarla fuera del ciclo de persistencia.
+  const user = await this.usersRepository
+    .createQueryBuilder('user')
+    .addSelect('user.password')
+    .where('user.idUser = :id', { id })
+    .getOne();
   if (!user) {
     throw new NotFoundException('Usuario no encontrado');
   }
@@ -133,8 +151,30 @@ export class UsersService {
     await this.usersRepository.remove(user);
   }
 
+  // Encontrar todos los usuarios, incluyendo el nombre del rol
   async findAll(): Promise<User[]> {
     return this.usersRepository.find();
+  }
+
+  // Usuarios registrados el día de hoy, con el nombre del rol incluido
+  async findNewUsersToday(): Promise<Array<User & { roleName: string | null }>> {
+    const rows = await this.usersRepository.manager.query(
+      `SELECT
+        u.idUser as id,
+        u.name,
+        u.lastName,
+        u.cedula,
+        u.email,
+        u.phone,
+        u.status,
+        u.fechaRegistro,
+        u.idRol,
+        r.name as roleName
+      FROM users u
+      LEFT JOIN roles r ON r.idRol = u.idRol
+      WHERE DATE(u.fechaRegistro) = CURDATE()`,
+    );
+    return rows;
   }
 
   async findAllWithRoleName(): Promise<Array<User & { roleName: string | null }>> {
@@ -150,8 +190,8 @@ export class UsersService {
         u.fechaRegistro,
         u.idRol,
         r.name as roleName
-      FROM Users u
-      LEFT JOIN Roles r ON r.idRol = u.idRol`,
+      FROM users u
+      LEFT JOIN roles r ON r.idRol = u.idRol`,
     );
     return rows;
   }
@@ -169,8 +209,8 @@ export class UsersService {
         u.fechaRegistro,
         u.idRol,
         r.name as roleName
-      FROM Users u
-      LEFT JOIN Roles r ON r.idRol = u.idRol
+      FROM users u
+      LEFT JOIN roles r ON r.idRol = u.idRol
       WHERE u.idUser = ?
       LIMIT 1`,
       [id],
@@ -185,9 +225,13 @@ export class UsersService {
 }
 
 async findByResetToken(hashedToken: string) {
-  return this.usersRepository.findOne({
-    where: { resetPasswordToken: hashedToken },
-  });
+  // resetPasswordExpires es select: false, hay que pedirla explicitamente
+  // porque resetPassword() necesita comprobar la caducidad.
+  return this.usersRepository
+    .createQueryBuilder('user')
+    .addSelect(['user.resetPasswordToken', 'user.resetPasswordExpires'])
+    .where('user.resetPasswordToken = :hashedToken', { hashedToken })
+    .getOne();
 }
 
 async updatePasswordAndClearToken(userId: number, hashedPassword: string) {

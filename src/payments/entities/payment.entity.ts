@@ -10,8 +10,9 @@ import { User } from '../../users/entities/user.entity';
 import { Event } from '../../events/entities/event.entity';
 import { ConsumeDetails } from '../../consumeDetails/entities/consumeDetail.entity';
 import { PaymentDetails } from '../../payment-details/entities/paymentDetail.entity';
+import { PaymentStatus } from '../enums/payment-status.enum';
 
-@Entity('Payment')
+@Entity('payment')
 export class Payment {
   @PrimaryGeneratedColumn({ name: 'idPayment' })
   idPayment: number;
@@ -27,11 +28,8 @@ export class Payment {
   @Column({ length: 100, nullable: true })
   noDocumento: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp' })
   date: Date;
-
-  @Column({ type: 'time' })
-  time: string;
 
   @Column('decimal', { precision: 15, scale: 2, nullable: true })
   totalBaseImponible: number;
@@ -81,8 +79,17 @@ export class Payment {
   @Column({ type: 'date', nullable: true })
   fechaTransferencia: Date;
 
-  @Column({ type: 'tinyint', width: 4 })
-  status: number;
+  // La columna en MySQL es enum('Aprobado','Pendiente','Rechazado').
+  // Antes se declaraba como tinyint, que no corresponde con el tipo real.
+  @Column({
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.Pendiente,
+  })
+  status: PaymentStatus;
+
+  @Column({ type: 'boolean', default: false })
+  isDeleted: boolean;
 
   @OneToMany(() => ConsumeDetails, (consumeDetails) => consumeDetails.idPayment, {
     cascade: true,

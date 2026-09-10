@@ -3,7 +3,6 @@ import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Payment } from './entities/payment.entity';
-import { PaymentDetails } from './entities/paymentDetails.entity';
 import { UsersModule } from '../users/users.module';
 import { EventsModule } from '../events/events.module';
 import { ConsumeDetailsModule } from '../consumeDetails/consumeDetails.module';
@@ -13,7 +12,10 @@ import { PaymentDetailsModule } from '../payment-details/payment-details.module'
 
 @Module({
   imports: [
-  TypeOrmModule.forFeature([Payment, PaymentDetails]),
+    // La entidad PaymentDetails vive en PaymentDetailsModule (importado abajo).
+    // Antes habia una segunda clase PaymentDetails en este modulo mapeando la
+    // misma tabla, con columnas distintas y sin estar registrada en el DataSource.
+    TypeOrmModule.forFeature([Payment]),
     forwardRef(() => UsersModule),
     forwardRef(() => EventsModule),
     forwardRef(() => ConsumeDetailsModule),

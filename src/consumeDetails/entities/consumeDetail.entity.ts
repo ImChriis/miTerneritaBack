@@ -9,7 +9,7 @@ import { Food } from '../../food/entities/food.entity';
 import { Drink } from '../../drinks/entities/drink.entity';
 import { Payment } from '../../payments/entities/payment.entity';
 
-@Entity('ConsumeDetails')
+@Entity('consumedetails')
 export class ConsumeDetails {
   @PrimaryGeneratedColumn({ name: 'idConsumeDetails' })
   idConsumeDetails: number;

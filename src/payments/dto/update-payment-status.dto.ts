@@ -1,6 +1,9 @@
-import { IsString, IsEnum } from 'class-validator';
+import { IsEnum } from 'class-validator';
+import { PaymentStatus } from '../enums/payment-status.enum';
 
 export class UpdatePaymentStatusDto {
-  @IsEnum(['pending', 'completed', 'cancelled'])
-  readonly status: 'pending' | 'completed' | 'cancelled';
+  @IsEnum(PaymentStatus, {
+    message: `status debe ser uno de: ${Object.values(PaymentStatus).join(', ')}`,
+  })
+  readonly status: PaymentStatus;
 }

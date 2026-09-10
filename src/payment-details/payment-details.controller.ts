@@ -1,13 +1,14 @@
 import {
   Controller,
+  DefaultValuePipe,
   Get,
   Post,
-  Put,
   Param,
   Body,
   UseGuards,
   ParseIntPipe,
   Patch,
+  Query,
 } from '@nestjs/common';
 import { PaymentDetailsService } from './payment-details.service';
 import { CreatePaymentDetailsDto } from './dto/create-payment-detail.dto';
@@ -36,10 +37,27 @@ export class PaymentDetailsController {
     return this.paymentDetailsService.updateStatus(id, updateStatusDto);
   }
 
+  // El servicio ya paginaba, pero el controlador no exponia los parametros,
+  // asi que siempre se devolvian los 20 primeros.
   @Get()
   @Roles('admin')
-  async findAll() {
-    return this.paymentDetailsService.findAll();
+  async findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    return this.paymentDetailsService.findAll(page, limit);
+  }
+
+  @Get('totals/today')
+  @Roles('admin')
+  async getTotalToday() {
+    return this.paymentDetailsService.getTotalToday();
+  }
+
+  @Get('totals/general')
+  @Roles('admin')
+  async getTotalGeneral() {
+    return this.paymentDetailsService.getTotalGeneral();
   }
 
   @Get(':id')

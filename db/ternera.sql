@@ -180,7 +180,7 @@ CREATE TABLE `payment` (
   `banco` varchar(100) DEFAULT NULL,
   `referencia` varchar(100) DEFAULT NULL,
   `fechaTransferencia` date DEFAULT NULL,
-  `status` enum('Aprovado','Pendiente','Rechazado') NOT NULL DEFAULT 'Pendiente',
+  `status` enum('Aprobado','Pendiente','Rechazado') NOT NULL DEFAULT 'Pendiente',
   `isDeleted` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

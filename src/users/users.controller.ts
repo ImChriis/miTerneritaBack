@@ -45,6 +45,27 @@ export class UsersController {
     );
   }
 
+  // Solo admin puede ver los usuarios registrados hoy
+  @Get('new-today')
+  @Roles('admin')
+  async findNewToday(): Promise<UserResponseDto[]> {
+    const users = await this.usersService.findNewUsersToday();
+    return users.map(
+      (user) =>
+        new UserResponseDto({
+          id: user.id,
+          name: user.name,
+          lastName: user.lastName,
+          cedula: user.cedula,
+          email: user.email,
+          phone: user.phone,
+          status: user.status,
+          fechaRegistro: user.fechaRegistro,
+          roleName: user.roleName ?? '',
+        }),
+    );
+  }
+
   // Usuario puede ver su propio perfil
   @Get('profile')
   async getProfile(@Request() req) {
