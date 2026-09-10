@@ -7,7 +7,6 @@ import {
   Body,
   UseGuards,
   ParseIntPipe,
-  Query,
 } from '@nestjs/common';
 import { ConsumeDetailsService } from './consumeDetails.service';
 import { CreateConsumeDetailDto } from './dto/create-consumeDetail.dto';

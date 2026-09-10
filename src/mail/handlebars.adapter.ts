@@ -11,7 +11,6 @@ export class HandlebarsAdapter {
   compile(
     mail: any,
     callback: (err: Error | null) => void,
-    templateOptions: any,
   ) {
     try {
       const templateName = mail.data.template;

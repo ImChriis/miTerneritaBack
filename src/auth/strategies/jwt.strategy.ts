@@ -3,6 +3,13 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
+import { AuthenticatedUser } from '../interfaces/authenticated-request';
+
+interface JwtPayload {
+  sub: number;
+  email: string;
+  role: string | null;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -17,7 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
+  async validate(payload: JwtPayload) {
     const user = await this.usersService.findById(payload.sub);
 
     // Un token puede seguir siendo criptograficamente valido despues de que el
@@ -32,6 +39,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const roleName = await this.usersService.getRoleNameByIdRol(user.idRol);
 
-    return { userId: user.id, email: user.email, role: roleName };
+    const authenticatedUser: AuthenticatedUser = {
+      userId: user.id!,
+      email: user.email,
+      role: roleName,
+    };
+
+    return authenticatedUser;
   }
 }

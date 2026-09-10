@@ -3,8 +3,11 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  JoinColumn,
+  ManyToOne,
   Unique,
 } from 'typeorm';
+import { Role } from './role.entity';
 
 @Entity('users')
 @Unique(['cedula'])
@@ -40,6 +43,11 @@ export class User {
 
   @Column({ name: 'idRol' })
   idRol?: number;
+
+  // Relacion de solo lectura: la que se escribe es la columna idRol de arriba.
+  @ManyToOne(() => Role, { nullable: true })
+  @JoinColumn({ name: 'idRol' })
+  role?: Role;
 
   @CreateDateColumn({ name: 'fechaRegistro' })
   fechaRegistro?: Date;

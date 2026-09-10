@@ -5,7 +5,6 @@ import {
   IsDateString,
   IsInt,
   Min,
-  Max,
   Matches,
 } from 'class-validator';
 import {Type} from 'class-transformer';

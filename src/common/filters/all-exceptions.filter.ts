@@ -40,7 +40,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         `${request.method} ${request.url} -> 500`,
         exception instanceof Error ? exception.stack : String(exception),
       );
-    } else if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    } else if (status >= 500) {
       this.logger.error(`${request.method} ${request.url} -> ${status}`);
     }
 
@@ -49,7 +49,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       .json(
         typeof body === 'string'
           ? { statusCode: status, message: body, path: request.url }
-          : { ...(body as object), path: request.url },
+          : { ...body, path: request.url },
       );
   }
 }

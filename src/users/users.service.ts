@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from './entities/user.entity';
+import { Role } from './entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -11,22 +12,38 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+
+    @InjectRepository(Role)
+    private rolesRepository: Repository<Role>,
   ) {}
 
-  private async findRoleByName(name: string): Promise<{ idRol: number; name: string } | null> {
-    const rows = await this.usersRepository.manager.query(
-      'SELECT idRol, name FROM roles WHERE name = ? LIMIT 1',
-      [name],
+  /**
+   * Carga usuarios con su rol y aplana el nombre en `roleName`, que es la
+   * forma que espera UserResponseDto.
+   */
+  private async findUsersWithRoleName(
+    where?: (qb: SelectQueryBuilder<User>) => void,
+  ): Promise<Array<User & { roleName: string | null }>> {
+    const qb = this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.role', 'role')
+      .orderBy('user.id', 'ASC');
+
+    where?.(qb);
+
+    const users = await qb.getMany();
+
+    return users.map((user) =>
+      Object.assign(user, { roleName: user.role?.name ?? null }),
     );
-    return rows[0] ?? null;
   }
 
-  private async findRoleById(idRol: number): Promise<{ idRol: number; name: string } | null> {
-    const rows = await this.usersRepository.manager.query(
-      'SELECT idRol, name FROM roles WHERE idRol = ? LIMIT 1',
-      [idRol],
-    );
-    return rows[0] ?? null;
+  private async findRoleByName(name: string): Promise<Role | null> {
+    return this.rolesRepository.findOne({ where: { name } });
+  }
+
+  private async findRoleById(idRol: number): Promise<Role | null> {
+    return this.rolesRepository.findOne({ where: { idRol } });
   }
 
   async getRoleNameByIdRol(idRol?: number): Promise<string | null> {
@@ -37,7 +54,7 @@ export class UsersService {
     return role ? role.name : null;
   }
 
-  async getRoleByName(name: string): Promise<{ idRol: number; name: string } | null> {
+  async getRoleByName(name: string): Promise<Role | null> {
     return this.findRoleByName(name);
   }
 
@@ -158,65 +175,34 @@ export class UsersService {
 
   // Usuarios registrados el día de hoy, con el nombre del rol incluido
   async findNewUsersToday(): Promise<Array<User & { roleName: string | null }>> {
-    const rows = await this.usersRepository.manager.query(
-      `SELECT
-        u.idUser as id,
-        u.name,
-        u.lastName,
-        u.cedula,
-        u.email,
-        u.phone,
-        u.status,
-        u.fechaRegistro,
-        u.idRol,
-        r.name as roleName
-      FROM users u
-      LEFT JOIN roles r ON r.idRol = u.idRol
-      WHERE DATE(u.fechaRegistro) = CURDATE()`,
+    // Rango de fechas en vez de DATE(fechaRegistro) = CURDATE(): asi MySQL
+    // puede usar un indice sobre la columna en lugar de recorrer la tabla.
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    return this.findUsersWithRoleName((qb) =>
+      qb.where('user.fechaRegistro >= :start AND user.fechaRegistro < :end', {
+        start,
+        end,
+      }),
     );
-    return rows;
   }
 
   async findAllWithRoleName(): Promise<Array<User & { roleName: string | null }>> {
-    const rows = await this.usersRepository.manager.query(
-      `SELECT
-        u.idUser as id,
-        u.name,
-        u.lastName,
-        u.cedula,
-        u.email,
-        u.phone,
-        u.status,
-        u.fechaRegistro,
-        u.idRol,
-        r.name as roleName
-      FROM users u
-      LEFT JOIN roles r ON r.idRol = u.idRol`,
-    );
-    return rows;
+    return this.findUsersWithRoleName();
   }
 
-  async findByIdWithRoleName(id: number): Promise<(User & { roleName: string | null }) | null> {
-    const rows = await this.usersRepository.manager.query(
-      `SELECT
-        u.idUser as id,
-        u.name,
-        u.lastName,
-        u.cedula,
-        u.email,
-        u.phone,
-        u.status,
-        u.fechaRegistro,
-        u.idRol,
-        r.name as roleName
-      FROM users u
-      LEFT JOIN roles r ON r.idRol = u.idRol
-      WHERE u.idUser = ?
-      LIMIT 1`,
-      [id],
+  async findByIdWithRoleName(
+    id: number,
+  ): Promise<(User & { roleName: string | null }) | null> {
+    const [user] = await this.findUsersWithRoleName((qb) =>
+      qb.where('user.id = :id', { id }),
     );
-    return rows[0] ?? null;
+    return user ?? null;
   }
+
   async setResetToken(userId: number, hashedToken: string, expiresAt: Date) {
   return this.usersRepository.update(userId, {
     resetPasswordToken: hashedToken,

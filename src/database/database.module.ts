@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User } from '../users/entities/user.entity';
+import { Role } from '../users/entities/role.entity';
 import { Event } from '../events/entities/event.entity';
 import { Food } from '../food/entities/food.entity';
 import { Drink } from '../drinks/entities/drink.entity';
@@ -28,6 +29,7 @@ import { Ticket } from '../tickets/entities/ticket.entity';
         database: configService.get<string>('DATABASE_NAME'),
         entities: [
           User,
+          Role,
           Event,
           Food,
           Drink,

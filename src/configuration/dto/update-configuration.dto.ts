@@ -2,9 +2,7 @@ import {
   IsEmail,
   IsOptional,
   IsString,
-  IsDecimal,
   IsNumber,
-  Min,
 } from 'class-validator';
 
 export class UpdateConfigurationDto {

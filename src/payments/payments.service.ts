@@ -80,7 +80,7 @@ export class PaymentsService {
   async findOneForRequester(
     id: number,
     requesterId: number,
-    requesterRole: string,
+    requesterRole: string | null,
   ): Promise<Payment> {
     const payment = await this.findOne(id);
 

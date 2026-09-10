@@ -17,14 +17,12 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TicketsModule } from './tickets/tickets.module';
-import { ScheduleModule } from '@nestjs/schedule';
 import { MailModule } from './mail/mail.module';
 import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
 import { validateEnv } from './config/env.validation';
 
 @Module({
   imports: [
-    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',

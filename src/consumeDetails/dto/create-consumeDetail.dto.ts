@@ -1,4 +1,4 @@
-import { IsInt, Min, IsOptional, ValidateIf, IsNumber, IsNotEmpty} from 'class-validator';
+import { IsOptional, IsNumber, IsNotEmpty } from 'class-validator';
 
 export class CreateConsumeDetailDto {
   @IsOptional()

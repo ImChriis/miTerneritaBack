@@ -26,7 +26,7 @@ export function validateEnv(config: Record<string, unknown>) {
       return config[key] === undefined;
     }
     const value = config[key];
-    return value === undefined || String(value).trim() === '';
+    return value === undefined || `${value as string}`.trim() === '';
   });
 
   if (missing.length > 0) {
@@ -35,14 +35,14 @@ export function validateEnv(config: Record<string, unknown>) {
     );
   }
 
-  const jwtSecret = String(config.JWT_SECRET);
+  const jwtSecret = `${config.JWT_SECRET as string}`;
   if (jwtSecret.length < 32) {
     logger.warn(
       'JWT_SECRET tiene menos de 32 caracteres. Usa un secreto largo y aleatorio en producción.',
     );
   }
 
-  if (!config.CORS_ORIGINS || String(config.CORS_ORIGINS).trim() === '') {
+  if (!config.CORS_ORIGINS || `${config.CORS_ORIGINS as string}`.trim() === '') {
     logger.warn(
       'CORS_ORIGINS no está definido: la API aceptará peticiones de cualquier origen.',
     );

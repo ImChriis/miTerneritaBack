@@ -52,4 +52,4 @@ async function bootstrap() {
   await app.listen(port);
   logger.log(`API escuchando en el puerto ${port}`);
 }
-bootstrap();
+void bootstrap();

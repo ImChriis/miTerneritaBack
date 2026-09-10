@@ -16,6 +16,7 @@ import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request';
 
 @Controller('payment')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -36,7 +37,10 @@ export class PaymentsController {
 
   @Get(':id')
   @Roles('admin', 'user')
-  async findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
     // Un usuario con rol 'user' solo puede consultar sus propios pagos.
     return this.paymentsService.findOneForRequester(
       id,
