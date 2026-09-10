@@ -76,8 +76,9 @@ export class Payment {
   @Column({ length: 100, nullable: true })
   referencia: string;
 
+  // Igual que events.date: el driver la devuelve como string 'AAAA-MM-DD'.
   @Column({ type: 'date', nullable: true })
-  fechaTransferencia: Date;
+  fechaTransferencia: string;
 
   // La columna en MySQL es enum('Aprobado','Pendiente','Rechazado').
   // Antes se declaraba como tinyint, que no corresponde con el tipo real.

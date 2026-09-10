@@ -18,7 +18,7 @@ export interface ValidatedEntry {
   buyerName: string;
   buyerEmail: string;
   eventName: string;
-  eventDate: Date;
+  eventDate: string;
   ticketCount: number;
 }
 

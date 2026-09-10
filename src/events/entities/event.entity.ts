@@ -11,8 +11,9 @@ export class Event {
   @Column('text', { nullable: true })
   description: string;
 
+  // TypeORM entrega las columnas DATE como string 'AAAA-MM-DD', no como Date.
   @Column('date')
-  date: Date;
+  date: string;
 
   @Column('time')
   time: string;

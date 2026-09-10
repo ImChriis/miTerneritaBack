@@ -2,12 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { SendTicketConfirmationDto } from './dto/send-ticket-confirmation.dto';
 import { generateQrPng, QR_CONTENT_ID } from './qr';
+import { formatDateOnly } from '../common/format-date';
 
 export interface SendEntryPassOptions {
   userEmail: string;
   userName?: string;
   eventName?: string;
-  eventDate?: Date;
+  eventDate?: string;
   eventRoom?: string;
   /** Token opaco que va codificado en el QR. */
   token: string;
@@ -37,9 +38,7 @@ export class MailService {
         context: {
           userName: userName || 'usuario',
           eventName: eventName || 'el evento',
-          eventDate: eventDate
-            ? new Date(eventDate).toLocaleDateString('es-VE')
-            : null,
+          eventDate: formatDateOnly(eventDate),
           eventRoom: eventRoom || null,
           qrCodeImage: `cid:${QR_CONTENT_ID}`,
           currentYear: new Date().getFullYear(),
