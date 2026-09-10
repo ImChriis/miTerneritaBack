@@ -33,19 +33,49 @@ export class PaymentDetails {
   @Column({ name: 'precio', type: 'decimal', precision: 10, scale: 2 })
   precio: number;
 
-  @Column({ name: 'totalBase', type: 'decimal', precision: 15, scale: 2, nullable: true }) //Nullable por impuesto x
+  @Column({
+    name: 'totalBase',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+  }) //Nullable por impuesto x
   totalBase: number;
 
-  @Column({ name: 'impuestoCalculado', type: 'decimal', precision: 15, scale: 2, nullable: true }) //Nullable por impuesto x
+  @Column({
+    name: 'impuestoCalculado',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+  }) //Nullable por impuesto x
   impuestoCalculado: number;
 
-  @Column({ name: 'total', type: 'decimal', precision: 15, scale: 2, nullable: true }) // Nullable por impuesto x
+  @Column({
+    name: 'total',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+  }) // Nullable por impuesto x
   total: number;
 
-  @Column({ name: 'tasaDolarEvento', type: 'decimal', precision: 15, scale: 4, nullable: true }) // Nullable por impuesto x
+  @Column({
+    name: 'tasaDolarEvento',
+    type: 'decimal',
+    precision: 15,
+    scale: 4,
+    nullable: true,
+  }) // Nullable por impuesto x
   tasaDolarEvento: number;
 
-  @Column({ name: 'totalDolarEvento', type: 'decimal', precision: 15, scale: 2, nullable: true }) // Nullable por impuesto x
+  @Column({
+    name: 'totalDolarEvento',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+  }) // Nullable por impuesto x
   totalDolarEvento: number;
 
   @Column({ name: 'idTicket', type: 'int' })

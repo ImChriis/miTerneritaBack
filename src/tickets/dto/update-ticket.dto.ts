@@ -10,7 +10,6 @@ import {
 } from 'class-validator';
 
 export class UpdateTicketDto {
-
   @IsOptional()
   @IsString()
   readonly name?: string;
@@ -30,5 +29,4 @@ export class UpdateTicketDto {
   @Min(0)
   @Max(1)
   readonly status?: number;
-
 }

@@ -12,7 +12,6 @@ import { Role } from './role.entity';
 @Entity('users')
 @Unique(['cedula'])
 @Unique(['email'])
-
 export class User {
   @PrimaryGeneratedColumn({ name: 'idUser' })
   id?: number;

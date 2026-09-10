@@ -7,10 +7,9 @@ import {
   Min,
   Matches,
 } from 'class-validator';
-import {Type} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 export class CreateEventDto {
-
   @IsString()
   @IsNotEmpty()
   @Type(() => String)
@@ -36,7 +35,7 @@ export class CreateEventDto {
 
   @IsInt()
   @Min(1)
-  @Type (() => Number)
+  @Type(() => Number)
   readonly capacity?: number;
 
   // Flyer e Imagenes 1, 2 y 3
@@ -45,7 +44,7 @@ export class CreateEventDto {
   @Type(() => String)
   @Matches(/\.webp$/i, { message: 'El archivo debe ser formato .webp' })
   readonly flyer?: string;
-  
+
   @IsOptional()
   @IsString()
   @Type(() => String)

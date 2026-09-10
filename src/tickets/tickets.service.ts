@@ -31,37 +31,44 @@ export class TicketsService {
   }
 
   async findTicketsGroupedByEvent() {
-    const tickets = await this.ticketsRepository.find({ relations: ['events'] });
-    const groupedData = tickets.reduce((acc, ticket) => {
-      const event = ticket.events;
-      
-      // Si el ticket no tiene un evento asignado, lo ignoramos para este endpoint
-      if (!event) return acc;
+    const tickets = await this.ticketsRepository.find({
+      relations: ['events'],
+    });
+    const groupedData = tickets.reduce(
+      (acc, ticket) => {
+        const event = ticket.events;
 
-      if (!acc[event.idEvents]) {
-        acc[event.idEvents] = {
-          ...event,
-          tickets: [], // Inicializamos el arreglo de tickets para este evento
-        };
-      }
-      
-      const { events, ...ticketInfo } = ticket;
-      acc[event.idEvents].tickets.push(ticketInfo);
-      return acc;
-    }, {} as Record<number, any>);
+        // Si el ticket no tiene un evento asignado, lo ignoramos para este endpoint
+        if (!event) return acc;
+
+        if (!acc[event.idEvents]) {
+          acc[event.idEvents] = {
+            ...event,
+            tickets: [], // Inicializamos el arreglo de tickets para este evento
+          };
+        }
+
+        const { events, ...ticketInfo } = ticket;
+        acc[event.idEvents].tickets.push(ticketInfo);
+        return acc;
+      },
+      {} as Record<number, any>,
+    );
     return Object.values(groupedData);
   }
 
   async findTicketsByEvent(eventId: number): Promise<Ticket[]> {
     const tickets = await this.ticketsRepository.find({
       where: { idEvents: eventId },
-      // Puedes descomentar la siguiente línea si también quieres que te devuelva 
+      // Puedes descomentar la siguiente línea si también quieres que te devuelva
       // los datos del evento junto con cada ticket:
-      // relations: ['events'], 
+      // relations: ['events'],
     });
 
     if (!tickets || tickets.length === 0) {
-      throw new NotFoundException(`No se encontraron tickets para el evento con ID ${eventId}`);
+      throw new NotFoundException(
+        `No se encontraron tickets para el evento con ID ${eventId}`,
+      );
     }
 
     return tickets;

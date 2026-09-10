@@ -91,9 +91,13 @@ export class Payment {
   @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 
-  @OneToMany(() => ConsumeDetails, (consumeDetails) => consumeDetails.idPayment, {
-    cascade: true,
-  })
+  @OneToMany(
+    () => ConsumeDetails,
+    (consumeDetails) => consumeDetails.idPayment,
+    {
+      cascade: true,
+    },
+  )
   consumeDetails: ConsumeDetails[];
 
   @OneToMany(() => PaymentDetails, (paymentDetails) => paymentDetails.payment)

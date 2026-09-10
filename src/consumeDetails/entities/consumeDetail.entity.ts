@@ -18,7 +18,7 @@ export class ConsumeDetails {
   @JoinColumn({ name: 'idFood' })
   idFood: Food;
 
-  @Column({ name: 'foodAmount', type: 'int', default: 0, nullable: true})
+  @Column({ name: 'foodAmount', type: 'int', default: 0, nullable: true })
   foodAmount: number;
 
   @ManyToOne(() => Drink, { nullable: true })

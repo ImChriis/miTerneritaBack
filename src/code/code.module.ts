@@ -4,9 +4,8 @@ import { Code } from './entities/code.entity';
 import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Code]), 
-  forwardRef(() => PaymentsModule)],
-  
+  imports: [TypeOrmModule.forFeature([Code]), forwardRef(() => PaymentsModule)],
+
   providers: [],
   controllers: [],
   exports: [TypeOrmModule],

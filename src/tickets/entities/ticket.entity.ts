@@ -27,5 +27,4 @@ export class Ticket {
   @ManyToOne(() => Event)
   @JoinColumn({ name: 'idEvents' })
   events?: Event;
-
 }

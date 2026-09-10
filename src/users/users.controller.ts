@@ -41,7 +41,9 @@ export class UsersController {
 
   // Usuario puede ver su propio perfil
   @Get('profile')
-  async getProfile(@Request() req: AuthenticatedRequest): Promise<UserResponseDto> {
+  async getProfile(
+    @Request() req: AuthenticatedRequest,
+  ): Promise<UserResponseDto> {
     const user = await this.usersService.findByIdWithRoleName(req.user.userId);
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');

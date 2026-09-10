@@ -2,7 +2,6 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('drinks')
 export class Drink {
-
   @PrimaryGeneratedColumn({ name: 'idDrinks' })
   idDrinks?: number;
 
@@ -17,5 +16,4 @@ export class Drink {
 
   @Column({ length: 255 })
   image?: string;
-
 }

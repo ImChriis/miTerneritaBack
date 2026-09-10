@@ -1,11 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsString,
-  IsOptional,
-  Min,
-  Max,
-  IsInt,
-} from 'class-validator';
+import { IsString, IsOptional, Min, Max, IsInt } from 'class-validator';
 
 export class UpdateDrinkDto {
   @IsOptional()

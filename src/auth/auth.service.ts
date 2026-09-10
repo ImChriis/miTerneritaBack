@@ -50,15 +50,23 @@ export class AuthService {
 
   async register(registerUserDto: RegisterUserDto) {
     // Validar correo duplicado
-    const existingUserByEmail = await this.usersService.findByEmail(registerUserDto.email);
+    const existingUserByEmail = await this.usersService.findByEmail(
+      registerUserDto.email,
+    );
     if (existingUserByEmail) {
-      throw new BadRequestException('El correo electrónico ya está registrado. Por favor, utiliza otro.');
+      throw new BadRequestException(
+        'El correo electrónico ya está registrado. Por favor, utiliza otro.',
+      );
     }
 
     // Validar cédula duplicada
-    const existingUserByCedula = await this.usersService.findByCedula(registerUserDto.cedula);
+    const existingUserByCedula = await this.usersService.findByCedula(
+      registerUserDto.cedula,
+    );
     if (existingUserByCedula) {
-      throw new BadRequestException('La cédula ya está registrada. Por favor, verifica los datos ingresados.');
+      throw new BadRequestException(
+        'La cédula ya está registrada. Por favor, verifica los datos ingresados.',
+      );
     }
 
     try {
@@ -81,7 +89,9 @@ export class AuthService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException('Ocurrió un error al registrar el usuario. Por favor, intenta nuevamente o contacta al soporte.');
+      throw new BadRequestException(
+        'Ocurrió un error al registrar el usuario. Por favor, intenta nuevamente o contacta al soporte.',
+      );
     }
   }
 
@@ -124,7 +134,6 @@ export class AuthService {
           expiresInMinutes: 15,
         },
       });
-      
     } catch (error) {
       console.error('Error al enviar el correo de recuperación:', error);
       throw new BadRequestException(
@@ -147,14 +156,21 @@ export class AuthService {
 
     const user = await this.usersService.findByResetToken(hashedToken);
 
-    if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+    if (
+      !user ||
+      !user.resetPasswordExpires ||
+      user.resetPasswordExpires < new Date()
+    ) {
       throw new BadRequestException(
         'El código es inválido o ha expirado. Solicita uno nuevo.',
       );
     }
 
     const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
-    await this.usersService.updatePasswordAndClearToken(user.id!, hashedPassword);
+    await this.usersService.updatePasswordAndClearToken(
+      user.id!,
+      hashedPassword,
+    );
 
     return { message: 'Tu contraseña ha sido actualizada correctamente.' };
   }

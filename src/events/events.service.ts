@@ -11,7 +11,7 @@ export class EventsService {
     @InjectRepository(Event)
     private eventsRepository: Repository<Event>,
   ) {}
- 
+
   async create(createEventDto: CreateEventDto): Promise<Event> {
     const event = this.eventsRepository.create(createEventDto);
     return this.eventsRepository.save(event);
@@ -30,7 +30,9 @@ export class EventsService {
   // }
 
   async findOne(id: number): Promise<Event> {
-    const event = await this.eventsRepository.findOne({ where: { idEvents: id } });
+    const event = await this.eventsRepository.findOne({
+      where: { idEvents: id },
+    });
     if (!event) {
       throw new NotFoundException('Evento no encontrado');
     }

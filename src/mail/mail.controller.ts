@@ -15,9 +15,7 @@ export class MailController {
 
   @Post('send')
   @Roles('admin')
-  async sendMail(
-    @Body() payload: SendTicketConfirmationDto,
-  ) {
-      return await this.mailService.sendMail(payload);
+  async sendMail(@Body() payload: SendTicketConfirmationDto) {
+    return await this.mailService.sendMail(payload);
   }
 }

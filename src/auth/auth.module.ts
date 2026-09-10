@@ -21,7 +21,9 @@ import { MailModule } from '../mail/mail.module';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         // cast to any to satisfy JwtModule types when env var may be undefined
-        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') as any },
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN') as any,
+        },
       }),
     }),
   ],

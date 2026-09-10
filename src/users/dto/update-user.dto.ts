@@ -8,7 +8,6 @@ import {
 } from 'class-validator';
 
 export class UpdateUserDto {
-
   @IsOptional()
   @IsInt()
   readonly id?: number;

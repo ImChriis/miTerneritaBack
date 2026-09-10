@@ -8,10 +8,7 @@ export class HandlebarsAdapter {
     private readonly options?: { ext?: string },
   ) {}
 
-  compile(
-    mail: any,
-    callback: (err: Error | null) => void,
-  ) {
+  compile(mail: any, callback: (err: Error | null) => void) {
     try {
       const templateName = mail.data.template;
       const ext = this.options?.ext ?? '.hbs';

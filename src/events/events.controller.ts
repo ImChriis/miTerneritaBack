@@ -21,7 +21,6 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { webpUploadOptions } from '../common/uploads/webp-upload';
 
-
 @Controller('events')
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
@@ -40,7 +39,6 @@ export class EventsController {
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.eventsService.findOne(id);
   }
-
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)

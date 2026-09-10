@@ -42,7 +42,10 @@ export function validateEnv(config: Record<string, unknown>) {
     );
   }
 
-  if (!config.CORS_ORIGINS || `${config.CORS_ORIGINS as string}`.trim() === '') {
+  if (
+    !config.CORS_ORIGINS ||
+    `${config.CORS_ORIGINS as string}`.trim() === ''
+  ) {
     logger.warn(
       'CORS_ORIGINS no está definido: la API aceptará peticiones de cualquier origen.',
     );

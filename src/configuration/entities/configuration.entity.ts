@@ -19,5 +19,4 @@ export class Configuration {
 
   @Column('decimal', { nullable: true })
   BCV: number;
-
 }

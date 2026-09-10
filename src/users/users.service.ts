@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -119,46 +124,46 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-  // Se carga con la contrasena incluida: save() actualiza las columnas
-  // cargadas y no conviene dejarla fuera del ciclo de persistencia.
-  const user = await this.usersRepository
-    .createQueryBuilder('user')
-    .addSelect('user.password')
-    .where('user.idUser = :id', { id })
-    .getOne();
-  if (!user) {
-    throw new NotFoundException('Usuario no encontrado');
-  }
+    // Se carga con la contrasena incluida: save() actualiza las columnas
+    // cargadas y no conviene dejarla fuera del ciclo de persistencia.
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.idUser = :id', { id })
+      .getOne();
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
 
-  if (updateUserDto.idRol) {
-    const role = await this.findRoleById(updateUserDto.idRol);
-    if (!role) {
-      throw new BadRequestException('Rol no encontrado');
+    if (updateUserDto.idRol) {
+      const role = await this.findRoleById(updateUserDto.idRol);
+      if (!role) {
+        throw new BadRequestException('Rol no encontrado');
+      }
+    }
+
+    const { id: _ignoredId, password, ...safeUpdateData } = updateUserDto;
+    Object.assign(user, safeUpdateData);
+
+    if (password) {
+      user.password = await bcrypt.hash(password, 10);
+    }
+
+    try {
+      return await this.usersRepository.save(user);
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') {
+        if (error.sqlMessage?.includes('cedula')) {
+          throw new ConflictException('Ya existe un usuario con esa cédula');
+        }
+        if (error.sqlMessage?.includes('email')) {
+          throw new ConflictException('Ya existe un usuario con ese email');
+        }
+        throw new ConflictException('Ese dato ya está en uso por otro usuario');
+      }
+      throw error;
     }
   }
-
-  const { id: _ignoredId, password, ...safeUpdateData } = updateUserDto;
-  Object.assign(user, safeUpdateData);
-
-  if (password) {
-    user.password = await bcrypt.hash(password, 10);
-  }
-
-  try {
-    return await this.usersRepository.save(user);
-  } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      if (error.sqlMessage?.includes('cedula')) {
-        throw new ConflictException('Ya existe un usuario con esa cédula');
-      }
-      if (error.sqlMessage?.includes('email')) {
-        throw new ConflictException('Ya existe un usuario con ese email');
-      }
-      throw new ConflictException('Ese dato ya está en uso por otro usuario');
-    }
-    throw error;
-  }
-}
 
   async remove(id: number): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id } });
@@ -174,7 +179,9 @@ export class UsersService {
   }
 
   // Usuarios registrados el día de hoy, con el nombre del rol incluido
-  async findNewUsersToday(): Promise<Array<User & { roleName: string | null }>> {
+  async findNewUsersToday(): Promise<
+    Array<User & { roleName: string | null }>
+  > {
     // Rango de fechas en vez de DATE(fechaRegistro) = CURDATE(): asi MySQL
     // puede usar un indice sobre la columna en lugar de recorrer la tabla.
     const start = new Date();
@@ -190,7 +197,9 @@ export class UsersService {
     );
   }
 
-  async findAllWithRoleName(): Promise<Array<User & { roleName: string | null }>> {
+  async findAllWithRoleName(): Promise<
+    Array<User & { roleName: string | null }>
+  > {
     return this.findUsersWithRoleName();
   }
 
@@ -204,27 +213,27 @@ export class UsersService {
   }
 
   async setResetToken(userId: number, hashedToken: string, expiresAt: Date) {
-  return this.usersRepository.update(userId, {
-    resetPasswordToken: hashedToken,
-    resetPasswordExpires: expiresAt,
-  });
-}
+    return this.usersRepository.update(userId, {
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: expiresAt,
+    });
+  }
 
-async findByResetToken(hashedToken: string) {
-  // resetPasswordExpires es select: false, hay que pedirla explicitamente
-  // porque resetPassword() necesita comprobar la caducidad.
-  return this.usersRepository
-    .createQueryBuilder('user')
-    .addSelect(['user.resetPasswordToken', 'user.resetPasswordExpires'])
-    .where('user.resetPasswordToken = :hashedToken', { hashedToken })
-    .getOne();
-}
+  async findByResetToken(hashedToken: string) {
+    // resetPasswordExpires es select: false, hay que pedirla explicitamente
+    // porque resetPassword() necesita comprobar la caducidad.
+    return this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect(['user.resetPasswordToken', 'user.resetPasswordExpires'])
+      .where('user.resetPasswordToken = :hashedToken', { hashedToken })
+      .getOne();
+  }
 
-async updatePasswordAndClearToken(userId: number, hashedPassword: string) {
-  return this.usersRepository.update(userId, {
-    password: hashedPassword,
-    resetPasswordToken: null,
-    resetPasswordExpires: null,
-  });
+  async updatePasswordAndClearToken(userId: number, hashedPassword: string) {
+    return this.usersRepository.update(userId, {
+      password: hashedPassword,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+    });
   }
 }

@@ -36,7 +36,7 @@ export class ConsumeDetailsController {
   async findByPayment(@Param('idPayment', ParseIntPipe) idPayment: number) {
     return this.consumeDetailsService.findByPayment(idPayment);
   }
-  
+
   @Delete(':id')
   @Roles('admin')
   async remove(@Param('id', ParseIntPipe) id: number) {

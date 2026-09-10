@@ -21,7 +21,6 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { webpUploadOptions } from '../common/uploads/webp-upload';
 
-
 @Controller('food')
 export class FoodController {
   constructor(private readonly foodService: FoodService) {}
@@ -39,9 +38,7 @@ export class FoodController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  @UseInterceptors(
-    FileInterceptor('image', webpUploadOptions({ maxFiles: 1 })),
-  )
+  @UseInterceptors(FileInterceptor('image', webpUploadOptions({ maxFiles: 1 })))
   async create(
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body() createFoodDto: CreateFoodDto,
@@ -59,13 +56,18 @@ export class FoodController {
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  @UseInterceptors(
-    FileInterceptor('image', webpUploadOptions({ maxFiles: 1 })),
-  )
+  @UseInterceptors(FileInterceptor('image', webpUploadOptions({ maxFiles: 1 })))
   async update(
-    @Param('id', new ParseIntPipe({ 
-      exceptionFactory: () => new BadRequestException('El ID proporcionado en la URL debe ser un número válido') 
-    })) id: number,
+    @Param(
+      'id',
+      new ParseIntPipe({
+        exceptionFactory: () =>
+          new BadRequestException(
+            'El ID proporcionado en la URL debe ser un número válido',
+          ),
+      }),
+    )
+    id: number,
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body() updateFoodDto: UpdateFoodDto,
   ) {

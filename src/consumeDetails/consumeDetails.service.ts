@@ -31,7 +31,8 @@ export class ConsumeDetailsService {
     createConsumeDetailDto: CreateConsumeDetailDto,
     manager?: EntityManager,
   ): Promise<ConsumeDetails> {
-    const { idFood, idDrinks, idPayment, totalConsume } = createConsumeDetailDto;
+    const { idFood, idDrinks, idPayment, totalConsume } =
+      createConsumeDetailDto;
 
     const consumeDetailsRepository = manager
       ? manager.getRepository(ConsumeDetails)
@@ -92,14 +93,14 @@ export class ConsumeDetailsService {
 
   async findAll(): Promise<ConsumeDetails[]> {
     return this.consumeDetailsRepository.find({
-  relations: ['idFood', 'idDrinks', 'idPayment'],
+      relations: ['idFood', 'idDrinks', 'idPayment'],
     });
   }
 
   async findByPayment(idPayment: number): Promise<ConsumeDetails[]> {
     return this.consumeDetailsRepository.find({
       where: { idPayment: { idPayment: idPayment } },
-  relations: ['idFood', 'idDrinks', 'idPayment'],
+      relations: ['idFood', 'idDrinks', 'idPayment'],
     });
   }
 

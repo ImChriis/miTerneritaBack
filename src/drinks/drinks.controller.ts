@@ -21,7 +21,6 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { webpUploadOptions } from '../common/uploads/webp-upload';
 
-
 @Controller('drinks')
 export class DrinksController {
   constructor(private readonly drinksService: DrinksService) {}
@@ -39,9 +38,7 @@ export class DrinksController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  @UseInterceptors(
-    FileInterceptor('image', webpUploadOptions({ maxFiles: 1 })),
-  )
+  @UseInterceptors(FileInterceptor('image', webpUploadOptions({ maxFiles: 1 })))
   async create(
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body() createDrinkDto: CreateDrinkDto,
@@ -59,9 +56,7 @@ export class DrinksController {
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  @UseInterceptors(
-    FileInterceptor('image', webpUploadOptions({ maxFiles: 1 })),
-  )
+  @UseInterceptors(FileInterceptor('image', webpUploadOptions({ maxFiles: 1 })))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: Express.Multer.File | undefined,

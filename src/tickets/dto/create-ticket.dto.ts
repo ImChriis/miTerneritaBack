@@ -7,10 +7,9 @@ import {
   IsInt,
   IsOptional,
 } from 'class-validator';
-import {Type} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 export class CreateTicketDto {
-
   @IsString()
   @IsNotEmpty()
   @Type(() => String)

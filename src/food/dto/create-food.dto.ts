@@ -10,7 +10,6 @@ import {
 } from 'class-validator';
 
 export class CreateFoodDto {
-
   @IsString()
   @IsNotEmpty()
   @Type(() => String)
@@ -36,5 +35,4 @@ export class CreateFoodDto {
   @IsOptional()
   @Type(() => Number)
   readonly activo?: number;
-
 }

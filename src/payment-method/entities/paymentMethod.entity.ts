@@ -7,5 +7,4 @@ export class PaymentMethod {
 
   @Column({ length: 255, nullable: true })
   description: string;
-
 }

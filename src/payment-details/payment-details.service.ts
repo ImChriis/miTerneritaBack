@@ -48,11 +48,11 @@ export class PaymentDetailsService {
   ): Promise<PaymentDetails> {
     const {
       idPayment,
-      idEvents : idEvent,
+      idEvents: idEvent,
       idUser,
       idTicket,
       idConsumeDetails,
-      precio : price,
+      precio: price,
       checked = false,
       status = 0,
     } = createPaymentDetailsDto;
@@ -136,63 +136,62 @@ export class PaymentDetailsService {
       idUser: user,
       ticketNum: createPaymentDetailsDto.ticketNum,
       precio: finalPrice,
-      totalBase : createPaymentDetailsDto.totalBase,
-      impuestoCalculado : createPaymentDetailsDto.impuestoCalculado,
-      total : createPaymentDetailsDto.total,
-      tasaDolarEvento : createPaymentDetailsDto.tasaDolarEvento,
-      totalDolarEvento : createPaymentDetailsDto.totalDolarEvento,
+      totalBase: createPaymentDetailsDto.totalBase,
+      impuestoCalculado: createPaymentDetailsDto.impuestoCalculado,
+      total: createPaymentDetailsDto.total,
+      tasaDolarEvento: createPaymentDetailsDto.tasaDolarEvento,
+      totalDolarEvento: createPaymentDetailsDto.totalDolarEvento,
       idTicket: idTicket,
       idConsumeDetails: consumeDetails,
       status,
       checked,
     });
 
-    const savedPaymentDetails = await paymentDetailsRepository.save(
-      paymentDetails,
-    );
+    const savedPaymentDetails =
+      await paymentDetailsRepository.save(paymentDetails);
     return savedPaymentDetails;
   }
 
-async updateStatus(
-  id: number,
-  updateStatusDto: UpdatePaymentDetailsStatusDto,
-): Promise<PaymentDetails> {
-  const paymentDetails = await this.paymentDetailsRepository.findOne({
-    where: { idPaymentDetails: id, isDeleted: false },
-    relations: ['idUser', 'idEvent', 'payment'],
-  });
-  if (!paymentDetails) {
-    throw new NotFoundException('Detalle de pago no encontrado');
-  }
-
-
-  const shouldSendEmail =
-    !paymentDetails.checked && updateStatusDto.checked === true;
-
-  paymentDetails.checked = updateStatusDto.checked;
-  const updatedPaymentDetails = await this.paymentDetailsRepository.save(paymentDetails);
-
-  if (shouldSendEmail) {
-    const userEmail = updatedPaymentDetails.idUser?.email;
-    const userId = updatedPaymentDetails.idUser?.id;
-    if (!userEmail || !userId) {
-      throw new BadRequestException('Usuario invalido para notificacion');
-    }
-    await this.mailService.sendMail({
-      userEmail,
-      userName: updatedPaymentDetails.idUser.name,
-      eventName: updatedPaymentDetails.idEvent.name,
-      ticketQuantity: updatedPaymentDetails.ticketNum ?? 1,
-      paymentId: updatedPaymentDetails.payment.idPayment,
-      paymentDetailId: updatedPaymentDetails.idPaymentDetails,
-      userId,
-      eventId: updatedPaymentDetails.idEvent.idEvents,
-      idTicket: updatedPaymentDetails.idTicket,
+  async updateStatus(
+    id: number,
+    updateStatusDto: UpdatePaymentDetailsStatusDto,
+  ): Promise<PaymentDetails> {
+    const paymentDetails = await this.paymentDetailsRepository.findOne({
+      where: { idPaymentDetails: id, isDeleted: false },
+      relations: ['idUser', 'idEvent', 'payment'],
     });
-  }
+    if (!paymentDetails) {
+      throw new NotFoundException('Detalle de pago no encontrado');
+    }
 
-  return updatedPaymentDetails;
-}
+    const shouldSendEmail =
+      !paymentDetails.checked && updateStatusDto.checked === true;
+
+    paymentDetails.checked = updateStatusDto.checked;
+    const updatedPaymentDetails =
+      await this.paymentDetailsRepository.save(paymentDetails);
+
+    if (shouldSendEmail) {
+      const userEmail = updatedPaymentDetails.idUser?.email;
+      const userId = updatedPaymentDetails.idUser?.id;
+      if (!userEmail || !userId) {
+        throw new BadRequestException('Usuario invalido para notificacion');
+      }
+      await this.mailService.sendMail({
+        userEmail,
+        userName: updatedPaymentDetails.idUser.name,
+        eventName: updatedPaymentDetails.idEvent.name,
+        ticketQuantity: updatedPaymentDetails.ticketNum ?? 1,
+        paymentId: updatedPaymentDetails.payment.idPayment,
+        paymentDetailId: updatedPaymentDetails.idPaymentDetails,
+        userId,
+        eventId: updatedPaymentDetails.idEvent.idEvents,
+        idTicket: updatedPaymentDetails.idTicket,
+      });
+    }
+
+    return updatedPaymentDetails;
+  }
 
   /**
    * Total de PaymentDetails registrados el día de hoy (cantidad + monto).
@@ -243,7 +242,10 @@ async updateStatus(
   async findAll(
     page = 1,
     limit = 20,
-  ): Promise<{ data: PaymentDetails[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
+  ): Promise<{
+    data: PaymentDetails[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     const safePage = Math.max(page, 1);
     const safeLimit = Math.min(Math.max(limit, 1), 100);
     const [data, total] = await this.paymentDetailsRepository.findAndCount({

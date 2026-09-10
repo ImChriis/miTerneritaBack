@@ -23,16 +23,16 @@ export class Event {
   @Column('int')
   capacity: number;
 
-  @Column({ length: 255})
+  @Column({ length: 255 })
   flyer: string;
 
-  @Column({ length: 255})
+  @Column({ length: 255 })
   image1: string;
 
-  @Column({ length: 255})
+  @Column({ length: 255 })
   image2: string;
 
-  @Column({ length: 255})
+  @Column({ length: 255 })
   image3: string;
 
   @Column('tinyint')
@@ -40,5 +40,4 @@ export class Event {
 
   @Column('int')
   consumo: number;
-
 }

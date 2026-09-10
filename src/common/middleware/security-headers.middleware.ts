@@ -17,7 +17,10 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
     // La API no devuelve HTML; las imágenes de /assets/img sí las consume
     // el frontend desde otro origen, de ahí el cross-origin explícito.
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.setHeader("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'none'; frame-ancestors 'none'",
+    );
 
     if (process.env.NODE_ENV === 'production') {
       res.setHeader(
