@@ -7,6 +7,7 @@ import { Event } from '../events/entities/event.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
 import { PaymentStatus } from './enums/payment-status.enum';
+import { CodeService } from '../code/code.service';
 
 const PAYMENT_RELATIONS = [
   'idUser',
@@ -26,6 +27,8 @@ export class PaymentsService {
 
     @InjectRepository(Event)
     private eventsRepository: Repository<Event>,
+
+    private readonly codeService: CodeService,
   ) {}
 
   async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
@@ -97,8 +100,18 @@ export class PaymentsService {
     updateStatusDto: UpdatePaymentStatusDto,
   ): Promise<Payment> {
     const payment = await this.findOne(id);
+    const wasApproved = payment.status === PaymentStatus.Aprobado;
+
     payment.status = updateStatusDto.status;
-    return this.paymentsRepository.save(payment);
+    const updated = await this.paymentsRepository.save(payment);
+
+    // Al aprobar se emite la entrada y se envia por correo. issueForPayment es
+    // idempotente, asi que reaprobar no invalida el QR ya enviado.
+    if (!wasApproved && updated.status === PaymentStatus.Aprobado) {
+      await this.codeService.issueForPayment(updated.idPayment);
+    }
+
+    return updated;
   }
 
   /**
