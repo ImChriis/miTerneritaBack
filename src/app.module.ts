@@ -53,9 +53,6 @@ import { validateEnv } from './config/env.validation';
       useFactory: (configService: ConfigService) => ({
         throttlers: [
           {
-            // THROTTLE_TTL se expresa en segundos en el .env, pero
-            // @nestjs/throttler v6 espera milisegundos. Sin esta conversion
-            // la ventana duraba 60 ms y el limite no se alcanzaba nunca.
             ttl: Number(configService.get<string>('THROTTLE_TTL') ?? 60) * 1000,
             limit: Number(configService.get<string>('THROTTLE_LIMIT') ?? 30),
           },
@@ -66,8 +63,6 @@ import { validateEnv } from './config/env.validation';
     TicketsModule,
   ],
   providers: [
-    // ThrottlerModule ya estaba configurado, pero el guard nunca se registró,
-    // así que el rate limiting no se aplicaba a ninguna ruta (incluido /auth/login).
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
