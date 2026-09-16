@@ -7,7 +7,12 @@ import {
   Min,
   Matches,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+import {
+  normalizeTime,
+  TIME_REGEX,
+  TIME_MESSAGE,
+} from '../../common/normalize-time';
 
 export class CreateEventDto {
   @IsString()
@@ -24,8 +29,8 @@ export class CreateEventDto {
   @Type(() => String)
   readonly date?: string;
 
-  @IsDateString()
-  @Type(() => String)
+  @Transform(({ value }) => normalizeTime(value))
+  @Matches(TIME_REGEX, { message: TIME_MESSAGE })
   readonly time?: string;
 
   @IsString()

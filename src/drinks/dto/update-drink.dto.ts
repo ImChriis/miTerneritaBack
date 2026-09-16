@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsString, IsOptional, Min, Max, IsInt } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  Min,
+  Max,
+  IsInt,
+  IsNumber,
+} from 'class-validator';
 
 export class UpdateDrinkDto {
   @IsOptional()
@@ -8,7 +15,7 @@ export class UpdateDrinkDto {
   readonly description?: string;
 
   @IsOptional()
-  @IsInt()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @Type(() => Number)
   readonly price?: number;

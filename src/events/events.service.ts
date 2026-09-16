@@ -1,9 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { removeImageIfUnused } from '../common/uploads/upload-cleanup';
 import { Event } from './entities/event.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+
+const EVENT_IMAGES = ['flyer', 'image1', 'image2', 'image3'] as const;
 
 @Injectable()
 export class EventsService {
@@ -41,12 +44,26 @@ export class EventsService {
 
   async update(id: number, updateEventDto: UpdateEventDto): Promise<Event> {
     const event = await this.findOne(id);
+    const anteriores = EVENT_IMAGES.map((campo) => event[campo]);
     Object.assign(event, updateEventDto);
-    return this.eventsRepository.save(event);
+    const saved = await this.eventsRepository.save(event);
+
+    // Las imagenes reemplazadas se borran del disco cuando ya no las usa
+    // ningun otro registro.
+    for (const [i, campo] of EVENT_IMAGES.entries()) {
+      if (anteriores[i] !== saved[campo]) {
+        await removeImageIfUnused(this.eventsRepository.manager, anteriores[i]);
+      }
+    }
+    return saved;
   }
 
   async remove(id: number): Promise<void> {
     const event = await this.findOne(id);
+    const imagenes = EVENT_IMAGES.map((campo) => event[campo]);
     await this.eventsRepository.remove(event);
+    for (const imagen of imagenes) {
+      await removeImageIfUnused(this.eventsRepository.manager, imagen);
+    }
   }
 }

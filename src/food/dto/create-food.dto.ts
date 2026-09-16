@@ -15,7 +15,7 @@ export class CreateFoodDto {
   @Type(() => String)
   readonly description?: string;
 
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @Type(() => Number)
   readonly price?: number;

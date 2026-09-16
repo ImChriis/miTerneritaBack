@@ -34,6 +34,17 @@ const getSafeBaseName = (value: string, fallback: string) => {
   return normalized || fallback;
 };
 
+/**
+ * Multer lee el nombre del archivo como latin1, pero los navegadores lo envian
+ * en UTF-8: "Móvil.webp" llegaba como "MÃ³vil.webp". Se recodifica, salvo que
+ * el resultado no sea UTF-8 valido (entonces el nombre ya venia bien).
+ */
+const decodeFilename = (name: string) => {
+  const utf8 = Buffer.from(name, 'latin1').toString('utf8');
+  // U+FFFD es el caracter que sustituye a los bytes que no son UTF-8.
+  return utf8.includes(String.fromCharCode(0xfffd)) ? name : utf8;
+};
+
 /** Anade un sufijo numerico hasta encontrar un nombre libre. */
 const getUniqueFilename = (base: string, ext: string) => {
   let candidate = `${base}${ext}`;
@@ -85,7 +96,13 @@ export function webpUploadOptions({
       destination: UPLOADS_DIR,
       filename: (req, file, callback) => {
         const ext = extname(file.originalname).toLowerCase();
-        const fallbackBase = basename(file.originalname, ext);
+        // Si no hay description (o llega despues del archivo en el form-data)
+        // se usa el nombre original, pero saneado igual: sin espacios,
+        // tildes ni simbolos.
+        const fallbackBase = getSafeBaseName(
+          basename(decodeFilename(file.originalname), ext),
+          'imagen',
+        );
         const description = (req as { body?: { description?: unknown } }).body
           ?.description;
         const base = getSafeBaseName(

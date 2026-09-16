@@ -20,6 +20,18 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { webpUploadOptions } from '../common/uploads/webp-upload';
+import { discardUploadedFiles } from '../common/uploads/upload-cleanup';
+
+/**
+ * imageL e imageS se aceptan en el formulario pero el evento no tiene columnas
+ * para ellas: antes se escribian en disco y nada las referenciaba. Se siguen
+ * aceptando para no romper al front si las envia, y se borran al terminar.
+ */
+const discardUnusedEventImages = (files?: {
+  imageL?: Express.Multer.File[];
+  imageS?: Express.Multer.File[];
+}) =>
+  discardUploadedFiles([...(files?.imageL ?? []), ...(files?.imageS ?? [])]);
 
 @Controller('events')
 export class EventsController {
@@ -42,7 +54,7 @@ export class EventsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'user')
   @UseInterceptors(
     FileFieldsInterceptor(
       [
@@ -79,13 +91,15 @@ export class EventsController {
       );
     }
 
-    return this.eventsService.create({
+    const event = await this.eventsService.create({
       ...createEventDto,
       flyer,
       image1,
       image2,
       image3,
     });
+    await discardUnusedEventImages(files);
+    return event;
   }
 
   @Put(':id')
@@ -122,13 +136,15 @@ export class EventsController {
     const image2 = files?.image2?.[0]?.filename ?? updateEventDto.image2;
     const image3 = files?.image3?.[0]?.filename ?? updateEventDto.image3;
 
-    return this.eventsService.update(id, {
+    const event = await this.eventsService.update(id, {
       ...updateEventDto,
       ...(flyer && { flyer }),
       ...(image1 && { image1 }),
       ...(image2 && { image2 }),
       ...(image3 && { image3 }),
     });
+    await discardUnusedEventImages(files);
+    return event;
   }
 
   @Delete(':id')

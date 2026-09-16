@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { discardUploadedFiles, uploadedFiles } from '../uploads/upload-cleanup';
 
 /**
  * Filtro global de excepciones.
@@ -19,7 +20,7 @@ import { Request, Response } from 'express';
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
-  catch(exception: unknown, host: ArgumentsHost) {
+  async catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
@@ -43,6 +44,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else if (status >= 500) {
       this.logger.error(`${request.method} ${request.url} -> ${status}`);
     }
+
+    // Si la peticion traia archivos y ha fallado, ya estan escritos en disco
+    // (multer los guarda antes de validar nada) y nadie los va a referenciar.
+    // Se espera al borrado antes de responder: si no, un reintento inmediato
+    // del cliente podia encontrarse todavia los archivos de este intento.
+    await discardUploadedFiles(uploadedFiles(request));
 
     response
       .status(status)

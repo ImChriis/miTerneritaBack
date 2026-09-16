@@ -11,6 +11,10 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2023",
+    // Con target ES2022+ cada campo declarado de un DTO existe como
+    // `undefined` aunque no venga en la peticion, y `{ ...dto }` lo copia
+    // sobre la entidad: el PUT respondia `image: undefined` sin haberla tocado.
+    "useDefineForClassFields": false,
     "sourceMap": true,
     "outDir": "./dist",
     "ignoreDeprecations": "5.0",

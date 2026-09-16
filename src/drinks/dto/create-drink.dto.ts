@@ -6,6 +6,7 @@ import {
   Min,
   Max,
   IsInt,
+  IsNumber,
 } from 'class-validator';
 
 export class CreateDrinkDto {
@@ -14,7 +15,8 @@ export class CreateDrinkDto {
   @Type(() => String)
   readonly description?: string;
 
-  @IsInt()
+  // DECIMAL(10,2) en la BD: antes era @IsInt() y una bebida de 4,50 daba 400.
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @Type(() => Number)
   readonly price?: number;
