@@ -37,7 +37,7 @@ export class FoodController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'user')
   @UseInterceptors(FileInterceptor('image', webpUploadOptions({ maxFiles: 1 })))
   async create(
     @UploadedFile() file: Express.Multer.File | undefined,

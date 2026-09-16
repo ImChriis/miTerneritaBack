@@ -48,47 +48,21 @@ export class AuthService {
     };
   }
 
+  /**
+   * Registro publico: los clientes crean su propia cuenta con rol `client`.
+   * Las cuentas de personal (rol `user`) las crea un admin con POST /users,
+   * que usa este mismo camino (UsersService.createAccount).
+   */
   async register(registerUserDto: RegisterUserDto) {
-    // Validar correo duplicado
-    const existingUserByEmail = await this.usersService.findByEmail(
-      registerUserDto.email,
-    );
-    if (existingUserByEmail) {
-      throw new BadRequestException(
-        'El correo electrónico ya está registrado. Por favor, utiliza otro.',
-      );
-    }
-
-    // Validar cédula duplicada
-    const existingUserByCedula = await this.usersService.findByCedula(
-      registerUserDto.cedula,
-    );
-    if (existingUserByCedula) {
-      throw new BadRequestException(
-        'La cédula ya está registrada. Por favor, verifica los datos ingresados.',
-      );
-    }
-
     try {
-      const hashedPassword = await bcrypt.hash(registerUserDto.password, 10);
-      // Buscar rol 'user' por nombre
-      const userRole = await this.usersService.getRoleByName('user');
-      if (!userRole) {
-        throw new BadRequestException('Rol "user" no encontrado.');
-      }
-      const user = await this.usersService.create({
-        ...registerUserDto,
-        password: hashedPassword,
-        roleName: 'user',
-        status: 1,
-        idRol: userRole.idRol,
-      });
-      return user;
+      return await this.usersService.createAccount(registerUserDto, 'client');
     } catch (error) {
-      console.error('Error al registrar el usuario:', error);
+      // Las BadRequest son esperadas (email o cedula ya registrados...) y
+      // llevan un mensaje para el usuario; solo el resto se registra en el log.
       if (error instanceof BadRequestException) {
         throw error;
       }
+      console.error('Error al registrar el usuario:', error);
       throw new BadRequestException(
         'Ocurrió un error al registrar el usuario. Por favor, intenta nuevamente o contacta al soporte.',
       );

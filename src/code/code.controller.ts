@@ -22,7 +22,7 @@ export class CodeController {
    * entrada como usada. Un segundo intento con el mismo token responde 409.
    */
   @Post('validate')
-  @Roles('admin')
+  @Roles('admin', 'user')
   async validate(@Body() validateCodeDto: ValidateCodeDto) {
     return this.codeService.validate(validateCodeDto.token);
   }

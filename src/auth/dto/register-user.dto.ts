@@ -1,23 +1,7 @@
-import { IsString, IsEmail, MinLength, MaxLength } from 'class-validator';
+import { CreateUserDto } from '../../users/dto/create-user.dto';
 
-export class RegisterUserDto {
-  @IsString()
-  readonly phone?: string;
-
-  @IsString()
-  readonly name: string;
-
-  @IsString()
-  readonly lastName: string;
-
-  @IsString()
-  readonly cedula: string;
-
-  @IsEmail()
-  readonly email: string;
-
-  @IsString()
-  @MinLength(6)
-  @MaxLength(20)
-  readonly password: string;
-}
+/**
+ * Registro publico de clientes. Mismas reglas que el alta de personal que
+ * hace un admin (POST /users); el rol `client` lo asigna AuthService.
+ */
+export class RegisterUserDto extends CreateUserDto {}
