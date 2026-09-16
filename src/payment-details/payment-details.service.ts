@@ -16,6 +16,14 @@ import { CreatePaymentDetailsDto } from './dto/create-payment-detail.dto';
 import { UpdatePaymentDetailsStatusDto } from './dto/update-payment-detail-status.dto';
 import { MailService } from '../mail/mail.service';
 
+/** Una linea de compra ya validada, con el precio sacado de la BD. */
+export interface PaymentLine {
+  ticket: Ticket;
+  cantidad: number;
+  precio: number;
+  total: number;
+}
+
 @Injectable()
 export class PaymentDetailsService {
   private readonly logger = new Logger(PaymentDetailsService.name);
@@ -150,6 +158,39 @@ export class PaymentDetailsService {
     const savedPaymentDetails =
       await paymentDetailsRepository.save(paymentDetails);
     return savedPaymentDetails;
+  }
+
+  /**
+   * Crea las lineas de factura de un pago recien creado, dentro de la
+   * transaccion de PaymentsService.create. Recibe las lineas ya validadas y
+   * con el precio resuelto desde la tabla `ticket`.
+   *
+   * Sin impuestos por ahora: total = precio x cantidad, y los campos de
+   * impuesto y tasa quedan vacios.
+   */
+  async createForPayment(
+    manager: EntityManager,
+    payment: Payment,
+    lines: PaymentLine[],
+  ): Promise<PaymentDetails[]> {
+    const repository = manager.getRepository(PaymentDetails);
+
+    const details = lines.map((line) =>
+      repository.create({
+        payment,
+        idEvent: payment.idEvents,
+        idUser: payment.idUser,
+        idTicket: line.ticket.idTicket,
+        ticketNum: line.cantidad,
+        precio: line.precio,
+        total: line.total,
+        status: 0,
+        checked: false,
+        isDeleted: false,
+      }),
+    );
+
+    return repository.save(details);
   }
 
   async updateStatus(

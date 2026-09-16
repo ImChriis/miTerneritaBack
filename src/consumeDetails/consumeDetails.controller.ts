@@ -6,6 +6,7 @@ import {
   Param,
   Body,
   UseGuards,
+  Request,
   ParseIntPipe,
 } from '@nestjs/common';
 import { ConsumeDetailsService } from './consumeDetails.service';
@@ -13,6 +14,7 @@ import { CreateConsumeDetailDto } from './dto/create-consumeDetail.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request';
 
 @Controller('consume-details')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,9 +34,12 @@ export class ConsumeDetailsController {
   }
 
   @Get('payment/:idPayment')
-  @Roles('admin', 'user')
-  async findByPayment(@Param('idPayment', ParseIntPipe) idPayment: number) {
-    return this.consumeDetailsService.findByPayment(idPayment);
+  @Roles('admin', 'client')
+  async findByPayment(
+    @Param('idPayment', ParseIntPipe) idPayment: number,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.consumeDetailsService.findByPayment(idPayment, req.user);
   }
 
   @Delete(':id')

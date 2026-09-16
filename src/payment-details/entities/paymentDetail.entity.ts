@@ -9,6 +9,7 @@ import { Payment } from '../../payments/entities/payment.entity';
 import { Event } from '../../events/entities/event.entity';
 import { User } from '../../users/entities/user.entity';
 import { ConsumeDetails } from '../../consumeDetails/entities/consumeDetail.entity';
+import { Ticket } from '../../tickets/entities/ticket.entity';
 
 @Entity('paymentdetails')
 export class PaymentDetails {
@@ -80,6 +81,12 @@ export class PaymentDetails {
 
   @Column({ name: 'idTicket', type: 'int' })
   idTicket: number;
+
+  // Relacion de solo lectura para devolver el nombre de la entrada en la
+  // factura. La que se escribe es la columna idTicket de arriba.
+  @ManyToOne(() => Ticket)
+  @JoinColumn({ name: 'idTicket' })
+  ticket?: Ticket;
 
   @ManyToOne(() => ConsumeDetails, { nullable: true })
   @JoinColumn({ name: 'idConsumeDetails' })
