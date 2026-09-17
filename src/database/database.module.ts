@@ -8,6 +8,7 @@ import { Food } from '../food/entities/food.entity';
 import { Drink } from '../drinks/entities/drink.entity';
 import { ConsumeDetails } from '../consumeDetails/entities/consumeDetail.entity';
 import { Payment } from '../payments/entities/payment.entity';
+import { DocumentSequence } from '../payments/entities/document-sequence.entity';
 import { Code } from '../code/entities/code.entity';
 import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity';
 import { PaymentMethod } from '../payment-method/entities/paymentMethod.entity';
@@ -36,6 +37,7 @@ import { Ticket } from '../tickets/entities/ticket.entity';
           Ticket,
           ConsumeDetails,
           Payment,
+          DocumentSequence,
           Code,
           PaymentDetails,
           PaymentMethod,

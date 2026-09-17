@@ -11,7 +11,6 @@ import {
   ParseIntPipe,
   UseInterceptors,
   UploadedFile,
-  BadRequestException,
   Res,
   StreamableFile,
 } from '@nestjs/common';
@@ -36,8 +35,8 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   /**
-   * multipart/form-data con el archivo en el campo `comprobante` (jpg, png,
-   * webp o pdf). Los guards de la clase se ejecutan antes que el interceptor,
+   * multipart/form-data con el archivo opcional en el campo `comprobante`
+   * (jpg, png, webp o pdf). Los guards de la clase se ejecutan antes que el interceptor,
    * asi que una peticion sin token no llega a escribir nada en disco. Si la
    * compra falla despues, el filtro global borra el archivo.
    */
@@ -49,15 +48,17 @@ export class PaymentsController {
     @Body() createPaymentDto: CreatePaymentDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    if (!comprobante) {
-      throw new BadRequestException('El comprobante es obligatorio');
+    // Opcional: los pagos en efectivo no tienen comprobante. Exigirlo en el
+    // flujo de transferencia es cosa del front, asi que la API acepta pagos
+    // sin el; el admin debe revisarlo antes de aprobar. Si llega, se valida.
+    if (comprobante) {
+      await assertComprobanteReal(comprobante);
     }
-    await assertComprobanteReal(comprobante);
 
     return this.paymentsService.create(
       createPaymentDto,
       req.user,
-      comprobante.filename,
+      comprobante?.filename,
     );
   }
 

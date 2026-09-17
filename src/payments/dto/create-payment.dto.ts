@@ -18,11 +18,13 @@ import { formDataArray } from '../../common/form-data';
 /**
  * Crea el pago y sus lineas de paymentdetails en una sola peticion.
  *
- * Llega como multipart/form-data porque incluye el archivo del comprobante
- * (campo `comprobante`, que recoge el FileInterceptor del controlador y por
- * eso no esta en este DTO). En form-data todo llega como texto: de ahi los
+ * Llega como multipart/form-data porque puede incluir el archivo del
+ * comprobante: campo `comprobante`, opcional porque los pagos en efectivo no
+ * lo tienen. Lo recoge el FileInterceptor del controlador y por eso no esta
+ * en este DTO. En form-data todo llega como texto: de ahi los
  * @Type(() => Number) y el formDataArray de items y consumos.
  *
+ * - noDocumento no se recibe: lo asigna el servidor con un contador.
  * - subtotalGeneral y totalGeneral no se reciben: los calcula el backend a
  *   partir de `items` y del precio de cada ticket.
  * - status tampoco: todo pago nace Pendiente y solo un admin lo aprueba con
@@ -47,11 +49,6 @@ export class CreatePaymentDto {
   @Min(1)
   @Type(() => Number)
   readonly idEvents: number;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  readonly noDocumento?: string;
 
   @IsOptional()
   @IsNumber()

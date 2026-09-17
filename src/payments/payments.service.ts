@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -24,6 +25,8 @@ import { ConsumeDetailsService } from '../consumeDetails/consumeDetails.service'
 import { recalculatePaymentTotals } from './payment-totals';
 import { fromCents, toCents } from '../common/money';
 import { sumQuantitiesBy } from '../common/merge-lines';
+import { DocumentSequence } from './entities/document-sequence.entity';
+import { formatDocumentNumber } from './document-number';
 import {
   comprobantePath,
   MIME_POR_EXTENSION,
@@ -67,7 +70,7 @@ export class PaymentsService {
   async create(
     createPaymentDto: CreatePaymentDto,
     requester: AuthenticatedUser,
-    comprobante: string,
+    comprobante?: string,
   ): Promise<Payment> {
     const {
       idUser: requestedUserId,
@@ -164,10 +167,18 @@ export class PaymentsService {
           consumos ?? [],
         );
 
+        // Se reserva al final, con todo ya validado: el contador queda
+        // bloqueado hasta el fin de la transaccion, asi que conviene tenerlo
+        // el menor tiempo posible. Orden de bloqueo fijo (evento -> contador)
+        // en todas las compras: no hay interbloqueos.
+        const noDocumento = await this.nextDocumentNumber(manager);
+
         const payment = await manager.getRepository(Payment).save(
           manager.getRepository(Payment).create({
             ...paymentData,
-            // Nombre del archivo en la carpeta privada de comprobantes.
+            noDocumento,
+            // Nombre del archivo en la carpeta privada de comprobantes, o
+            // vacio en los pagos en efectivo.
             comprobante,
             idUser: user,
             idEvents: event,
@@ -197,6 +208,29 @@ export class PaymentsService {
     );
 
     return this.findOne(idPayment);
+  }
+
+  /**
+   * Reserva el siguiente numero de documento de pago.
+   *
+   * El UPDATE incrementa y bloquea la fila del contador en un solo paso (no hay
+   * lectura previa que otra compra pueda adelantar). Con READ COMMITTED, la
+   * lectura siguiente ve el valor que acaba de escribir esta transaccion.
+   */
+  private async nextDocumentNumber(manager: EntityManager): Promise<string> {
+    const contador = manager.getRepository(DocumentSequence);
+    const { affected } = await contador.increment(
+      { name: 'payment' },
+      'lastValue',
+      1,
+    );
+    if (!affected) {
+      throw new InternalServerErrorException(
+        'No existe el contador de documentos: falta ejecutar la migracion 2026-09-17-payment-numero-documento.sql',
+      );
+    }
+    const { lastValue } = await contador.findOneByOrFail({ name: 'payment' });
+    return formatDocumentNumber(Number(lastValue));
   }
 
   /**

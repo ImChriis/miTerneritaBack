@@ -25,7 +25,9 @@ export class Payment {
   @JoinColumn({ name: 'idEvents' })
   idEvents: Event;
 
-  @Column({ length: 100, nullable: true })
+  // Numero secuencial (0000001... A0000001...) asignado al crear el pago.
+  // UNIQUE en la BD: uq_payment_noDocumento.
+  @Column({ length: 100, nullable: true, unique: true })
   noDocumento: string;
 
   @Column({ type: 'timestamp' })
