@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { PaymentDetails } from './entities/paymentDetail.entity';
 import { Payment } from '../payments/entities/payment.entity';
+import { PaymentStatus } from '../payments/enums/payment-status.enum';
 import { Event } from '../events/entities/event.entity';
 import { User } from '../users/entities/user.entity';
 import { ConsumeDetails } from '../consumeDetails/entities/consumeDetail.entity';
@@ -235,9 +236,8 @@ export class PaymentDetailsService {
   }
 
   /**
-   * Total de PaymentDetails registrados el día de hoy (cantidad + monto).
-   * paymentdetails no tiene columna de fecha propia, así que se usa la fecha
-   * del payment relacionado (payment.date).
+   * Entradas vendidas hoy e importe. Mismo criterio que getTotalGeneral; la
+   * fecha es la de compra del pago (paymentdetails no tiene fecha propia).
    */
   async getTotalToday(): Promise<{
     count: number;
@@ -245,12 +245,15 @@ export class PaymentDetailsService {
   }> {
     const rows = await this.paymentDetailsRepository.manager.query(
       `SELECT
-        COUNT(*) as count,
+        COALESCE(SUM(COALESCE(pd.ticketNum, 1)), 0) as count,
         COALESCE(SUM(pd.total), 0) as totalAmount
       FROM paymentdetails pd
       INNER JOIN payment p ON p.idPayment = pd.idPayment
-      WHERE DATE(p.date) = CURDATE()
-        AND pd.isDeleted = 0`,
+      WHERE p.status = ?
+        AND p.isDeleted = 0
+        AND pd.isDeleted = 0
+        AND DATE(p.date) = CURDATE()`,
+      [PaymentStatus.Aprobado],
     );
     const row = rows[0];
     return {
@@ -260,7 +263,12 @@ export class PaymentDetailsService {
   }
 
   /**
-   * Total de PaymentDetails en general (cantidad + monto), sin filtro de fecha.
+   * Entradas vendidas en total e importe, para el dashboard.
+   *
+   * - count suma las cantidades (ticketNum). Antes era COUNT(*), que contaba
+   *   lineas: una compra de "General x3" sumaba 1.
+   * - Solo cuentan los pagos Aprobados y no borrados: los pendientes aun no
+   *   estan cobrados y los rechazados nunca se vendieron.
    */
   async getTotalGeneral(): Promise<{
     count: number;
@@ -268,10 +276,14 @@ export class PaymentDetailsService {
   }> {
     const rows = await this.paymentDetailsRepository.manager.query(
       `SELECT
-        COUNT(*) as count,
-        COALESCE(SUM(total), 0) as totalAmount
-      FROM paymentdetails
-      WHERE isDeleted = 0`,
+        COALESCE(SUM(COALESCE(pd.ticketNum, 1)), 0) as count,
+        COALESCE(SUM(pd.total), 0) as totalAmount
+      FROM paymentdetails pd
+      INNER JOIN payment p ON p.idPayment = pd.idPayment
+      WHERE p.status = ?
+        AND p.isDeleted = 0
+        AND pd.isDeleted = 0`,
+      [PaymentStatus.Aprobado],
     );
     const row = rows[0];
     return {
