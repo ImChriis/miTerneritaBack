@@ -13,13 +13,47 @@ import { Payment } from '../payments/entities/payment.entity';
 import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity';
 import { MailService } from '../mail/mail.service';
 
+/** Una linea de la entrada escaneada: que tipo y cuantas. */
+export interface ValidatedEntryTicket {
+  idTicket: number;
+  tipo: string;
+  cantidad: number;
+}
+
 export interface ValidatedEntry {
   idPayment: number;
   buyerName: string;
   buyerEmail: string;
   eventName: string;
   eventDate: string;
+  /** Total de entradas del pago, sumando todos los tipos. */
   ticketCount: number;
+  /** Desglose por tipo, para ver en puerta si son generales, VIP... */
+  entradas: ValidatedEntryTicket[];
+}
+
+/**
+ * Agrupa las lineas por tipo de entrada: "General x2, VIP x1". Normalmente hay
+ * una linea por tipo, pero se suman por si un admin anadio otra a mano.
+ */
+function agruparPorTipo(details: PaymentDetails[]): ValidatedEntryTicket[] {
+  const porTipo = new Map<number, ValidatedEntryTicket>();
+
+  for (const detail of details) {
+    const cantidad = detail.ticketNum ?? 1;
+    const previo = porTipo.get(detail.idTicket);
+    if (previo) {
+      previo.cantidad += cantidad;
+    } else {
+      porTipo.set(detail.idTicket, {
+        idTicket: detail.idTicket,
+        tipo: detail.ticket?.name ?? 'Entrada',
+        cantidad,
+      });
+    }
+  }
+
+  return [...porTipo.values()];
 }
 
 @Injectable()
@@ -106,6 +140,8 @@ export class CodeService {
 
     const details = await this.paymentDetailsRepository.find({
       where: { payment: { idPayment: payment.idPayment }, isDeleted: false },
+      // El nombre del tipo de entrada (General, VIP...) vive en `ticket`.
+      relations: ['ticket'],
     });
 
     // Un pago sin detalles no da acceso a nada. Sin esta comprobacion el
@@ -134,6 +170,7 @@ export class CodeService {
         (total, detail) => total + (detail.ticketNum ?? 1),
         0,
       ),
+      entradas: agruparPorTipo(details),
     };
   }
 }
