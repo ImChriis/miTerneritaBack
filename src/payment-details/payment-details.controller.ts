@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Patch,
   Query,
+  Request,
 } from '@nestjs/common';
 import { PaymentDetailsService } from './payment-details.service';
 import { CreatePaymentDetailsDto } from './dto/create-payment-detail.dto';
@@ -16,6 +17,7 @@ import { UpdatePaymentDetailsStatusDto } from './dto/update-payment-detail-statu
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request';
 
 @Controller('payment-details')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -33,8 +35,13 @@ export class PaymentDetailsController {
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateStatusDto: UpdatePaymentDetailsStatusDto,
+    @Request() req: AuthenticatedRequest,
   ) {
-    return this.paymentDetailsService.updateStatus(id, updateStatusDto);
+    return this.paymentDetailsService.updateStatus(
+      id,
+      updateStatusDto,
+      req.user.userId,
+    );
   }
 
   // El servicio ya paginaba, pero el controlador no exponia los parametros,

@@ -31,6 +31,11 @@ export class PaymentDetails {
   @Column({ name: 'ticketNum', type: 'int', nullable: true }) // Nullable
   ticketNum: number;
 
+  // Entradas de esta linea ya usadas en puerta (0..ticketNum). Permite
+  // escanear el QR en varias veces; `checked` equivale a "todas usadas".
+  @Column({ name: 'usadas', type: 'int', default: 0 })
+  usadas: number;
+
   @Column({ name: 'precio', type: 'decimal', precision: 10, scale: 2 })
   precio: number;
 

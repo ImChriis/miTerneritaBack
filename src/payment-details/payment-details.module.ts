@@ -9,6 +9,7 @@ import { UsersModule } from '../users/users.module';
 import { ConsumeDetailsModule } from '../consumeDetails/consumeDetails.module';
 import { MailModule } from '../mail/mail.module';
 import { TicketsModule } from '../tickets/tickets.module';
+import { CodeModule } from '../code/code.module';
 
 @Module({
   imports: [
@@ -19,6 +20,8 @@ import { TicketsModule } from '../tickets/tickets.module';
     forwardRef(() => ConsumeDetailsModule),
     MailModule,
     TicketsModule,
+    // Para registrar la marca manual del admin en el registro de escaneos.
+    CodeModule,
   ],
   providers: [PaymentDetailsService],
   controllers: [PaymentDetailsController],

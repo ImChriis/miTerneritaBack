@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { PaymentDetails } from './entities/paymentDetail.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { PaymentStatus } from '../payments/enums/payment-status.enum';
@@ -16,6 +16,7 @@ import { Ticket } from '../tickets/entities/ticket.entity';
 import { CreatePaymentDetailsDto } from './dto/create-payment-detail.dto';
 import { UpdatePaymentDetailsStatusDto } from './dto/update-payment-detail-status.dto';
 import { MailService } from '../mail/mail.service';
+import { CodeService } from '../code/code.service';
 
 /** Una linea de compra ya validada, con el precio sacado de la BD. */
 export interface PaymentLine {
@@ -49,6 +50,10 @@ export class PaymentDetailsService {
     private ticketsRepository: Repository<Ticket>,
 
     private readonly mailService: MailService,
+
+    private readonly codeService: CodeService,
+
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(
@@ -194,45 +199,73 @@ export class PaymentDetailsService {
     return repository.save(details);
   }
 
+  /**
+   * Marca manual del admin. Mueve tambien el contador de la app de puerta:
+   * marcar como escaneada gasta todas las entradas de la linea y desmarcar las
+   * libera. Queda en el registro de escaneos (origen `manual`) para que
+   * registro y contadores cuadren.
+   */
   async updateStatus(
     id: number,
     updateStatusDto: UpdatePaymentDetailsStatusDto,
+    idUserAdmin: number,
   ): Promise<PaymentDetails> {
-    const paymentDetails = await this.paymentDetailsRepository.findOne({
-      where: { idPaymentDetails: id, isDeleted: false },
-      relations: ['idUser', 'idEvent', 'payment'],
-    });
-    if (!paymentDetails) {
-      throw new NotFoundException('Detalle de pago no encontrado');
-    }
+    const { linea, enviarCorreo } = await this.dataSource.transaction(
+      'READ COMMITTED',
+      async (manager) => {
+        const repo = manager.getRepository(PaymentDetails);
+        // Se bloquea la linea: la app de puerta puede estar escaneando este
+        // mismo pago en este momento.
+        const bloqueada = await repo
+          .createQueryBuilder('pd')
+          .where('pd.idPaymentDetails = :id', { id })
+          .andWhere('pd.isDeleted = 0')
+          .setLock('pessimistic_write')
+          .getOne();
+        if (!bloqueada) {
+          throw new NotFoundException('Detalle de pago no encontrado');
+        }
+        const linea = await repo.findOneOrFail({
+          where: { idPaymentDetails: id },
+          relations: ['idUser', 'idEvent', 'payment', 'ticket'],
+        });
 
-    const shouldSendEmail =
-      !paymentDetails.checked && updateStatusDto.checked === true;
+        const usadasAntes = linea.usadas;
+        const enviarCorreo = !linea.checked && updateStatusDto.checked === true;
+        linea.checked = updateStatusDto.checked;
+        linea.usadas = updateStatusDto.checked ? (linea.ticketNum ?? 1) : 0;
+        await repo.update(id, { checked: linea.checked, usadas: linea.usadas });
+        await this.codeService.registrarCorreccionManual(
+          manager,
+          linea,
+          usadasAntes,
+          linea.usadas,
+          idUserAdmin,
+        );
+        return { linea, enviarCorreo };
+      },
+    );
 
-    paymentDetails.checked = updateStatusDto.checked;
-    const updatedPaymentDetails =
-      await this.paymentDetailsRepository.save(paymentDetails);
-
-    if (shouldSendEmail) {
-      const userEmail = updatedPaymentDetails.idUser?.email;
-      const userId = updatedPaymentDetails.idUser?.id;
+    if (enviarCorreo) {
+      const userEmail = linea.idUser?.email;
+      const userId = linea.idUser?.id;
       if (!userEmail || !userId) {
         throw new BadRequestException('Usuario invalido para notificacion');
       }
       await this.mailService.sendMail({
         userEmail,
-        userName: updatedPaymentDetails.idUser.name,
-        eventName: updatedPaymentDetails.idEvent.name,
-        ticketQuantity: updatedPaymentDetails.ticketNum ?? 1,
-        paymentId: updatedPaymentDetails.payment.idPayment,
-        paymentDetailId: updatedPaymentDetails.idPaymentDetails,
+        userName: linea.idUser.name,
+        eventName: linea.idEvent.name,
+        ticketQuantity: linea.ticketNum ?? 1,
+        paymentId: linea.payment.idPayment,
+        paymentDetailId: linea.idPaymentDetails,
         userId,
-        eventId: updatedPaymentDetails.idEvent.idEvents,
-        idTicket: updatedPaymentDetails.idTicket,
+        eventId: linea.idEvent.idEvents,
+        idTicket: linea.idTicket,
       });
     }
 
-    return updatedPaymentDetails;
+    return linea;
   }
 
   /**
