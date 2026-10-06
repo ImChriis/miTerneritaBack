@@ -7,16 +7,23 @@ import {
   Min,
   Max,
   IsInt,
+  MaxLength,
 } from 'class-validator';
+import {
+  MAX_DESCRIPCION_PRODUCTO,
+  MAX_PRECIO_PRODUCTO,
+} from '../../common/producto-limites';
 
 export class CreateFoodDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(MAX_DESCRIPCION_PRODUCTO)
   @Type(() => String)
   readonly description?: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
+  @Max(MAX_PRECIO_PRODUCTO)
   @Type(() => Number)
   readonly price?: number;
 
@@ -30,9 +37,4 @@ export class CreateFoodDto {
   @IsOptional()
   @Type(() => String)
   readonly image?: string;
-
-  @IsInt()
-  @IsOptional()
-  @Type(() => Number)
-  readonly activo?: number;
 }

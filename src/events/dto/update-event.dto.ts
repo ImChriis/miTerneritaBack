@@ -2,6 +2,7 @@ import {
   IsString,
   IsOptional,
   IsDateString,
+  IsIn,
   IsInt,
   Min,
   Matches,
@@ -75,9 +76,13 @@ export class UpdateEventDto {
   @Type(() => Number)
   readonly status?: number;
 
+  /**
+   * Desactivarlo solo impide nuevas pre-ordenes: lo ya comprado se mantiene.
+   */
   @IsOptional()
-  @IsInt()
-  @Min(0)
+  @IsIn([0, 1], {
+    message: 'consumo debe ser 1 (permite pre-ordenar comida y bebida) o 0',
+  })
   @Type(() => Number)
   readonly consumo?: number;
 }

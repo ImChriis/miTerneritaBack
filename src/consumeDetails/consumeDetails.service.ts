@@ -14,7 +14,11 @@ import { Event } from '../events/entities/event.entity';
 import { PaymentStatus } from '../payments/enums/payment-status.enum';
 import { recalculatePaymentTotals } from '../payments/payment-totals';
 import { CreateConsumeDetailDto } from './dto/create-consumeDetail.dto';
-import { CreatePaymentConsumoDto } from '../payments/dto/create-payment-consumo.dto';
+import {
+  CreatePaymentConsumoDto,
+  MAX_CANTIDAD_CONSUMO,
+} from '../payments/dto/create-payment-consumo.dto';
+import { MenuEvento, PRODUCTO_DISPONIBLE, productoDisponible } from './menu';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-request';
 import { fromCents, toCents } from '../common/money';
 import { sumQuantitiesBy } from '../common/merge-lines';
@@ -40,6 +44,39 @@ export class ConsumeDetailsService {
   ) {}
 
   /**
+   * GET /events/:id/menu: lo que el cliente puede pre-ordenar en un evento.
+   * Si el evento no tiene consumo, las listas vienen vacias (200, no error):
+   * el front muestra "este evento no tiene pre-orden" sin manejar un 4xx.
+   *
+   * Hoy la carta es la misma para todos los eventos. Si mas adelante cada
+   * evento tiene la suya, solo cambia este metodo y productoDisponible: la
+   * compra ya valida contra la misma regla.
+   */
+  async menuDelEvento(idEvents: number): Promise<MenuEvento> {
+    const event = await this.dataSource
+      .getRepository(Event)
+      .findOne({ where: { idEvents } });
+    if (!event) {
+      throw new NotFoundException('Evento no encontrado');
+    }
+    if (event.consumo !== 1) {
+      return { idEvents, consumo: false, comidas: [], bebidas: [] };
+    }
+
+    const [comidas, bebidas] = await Promise.all([
+      this.dataSource.getRepository(Food).find({
+        where: PRODUCTO_DISPONIBLE,
+        order: { description: 'ASC' },
+      }),
+      this.dataSource.getRepository(Drink).find({
+        where: PRODUCTO_DISPONIBLE,
+        order: { description: 'ASC' },
+      }),
+    ]);
+    return { idEvents, consumo: true, comidas, bebidas };
+  }
+
+  /**
    * Valida las lineas de consumo contra la BD y les pone precio. Lo usan la
    * compra (PaymentsService.create) y la correccion del admin, para que las
    * reglas sean las mismas en los dos caminos.
@@ -53,7 +90,7 @@ export class ConsumeDetailsService {
       return [];
     }
 
-    if (!event.consumo) {
+    if (event.consumo !== 1) {
       throw new BadRequestException('Este evento no admite consumo');
     }
 
@@ -100,9 +137,16 @@ export class ConsumeDetailsService {
             : `La bebida ${consumo.idDrinks} no existe`,
         );
       }
-      if (producto.status !== 1) {
+      // Misma regla que el menu: ni agotado (status) ni borrado (activo).
+      if (!productoDisponible(producto)) {
         throw new BadRequestException(
           `"${producto.description}" no esta disponible`,
+        );
+      }
+      // El DTO limita cada linea; aqui se comprueba tras juntar las repetidas.
+      if (consumo.cantidad > MAX_CANTIDAD_CONSUMO) {
+        throw new BadRequestException(
+          `Maximo ${MAX_CANTIDAD_CONSUMO} unidades de "${producto.description}"`,
         );
       }
 

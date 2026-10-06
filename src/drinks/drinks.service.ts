@@ -18,13 +18,21 @@ export class DrinksService {
     return this.drinksRepository.save(drink);
   }
 
+  /**
+   * Todo lo que no esta borrado, a la venta o no: el panel de admin necesita
+   * ver tambien lo agotado para volver a activarlo. El menu que ve el cliente
+   * es GET /events/:id/menu, que solo trae lo disponible.
+   */
   async findAll(): Promise<Drink[]> {
-    return this.drinksRepository.find();
+    return this.drinksRepository.find({
+      where: { activo: 1 },
+      order: { idDrinks: 'ASC' },
+    });
   }
 
   async findOne(id: number): Promise<Drink> {
     const drink = await this.drinksRepository.findOne({
-      where: { idDrinks: id },
+      where: { idDrinks: id, activo: 1 },
     });
     if (!drink) {
       throw new NotFoundException('Bebida no encontrada');
@@ -46,10 +54,14 @@ export class DrinksService {
     return saved;
   }
 
+  /**
+   * Borrado logico. Antes se borraba la fila: si la bebida ya se habia
+   * vendido, la FK de consumedetails lo impedia (500), y de no impedirlo, las
+   * facturas anteriores se quedaban sin el nombre del producto. La imagen se
+   * conserva porque la fila la sigue referenciando.
+   */
   async remove(id: number): Promise<void> {
-    const drink = await this.findOne(id);
-    const imagen = drink.image;
-    await this.drinksRepository.remove(drink);
-    await removeImageIfUnused(this.drinksRepository.manager, imagen);
+    await this.findOne(id);
+    await this.drinksRepository.update(id, { activo: 0 });
   }
 }

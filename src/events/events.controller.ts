@@ -13,6 +13,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
+import { ConsumeDetailsService } from '../consumeDetails/consumeDetails.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -35,7 +36,10 @@ const discardUnusedEventImages = (files?: {
 
 @Controller('events')
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(
+    private readonly eventsService: EventsService,
+    private readonly consumeDetailsService: ConsumeDetailsService,
+  ) {}
 
   @Get()
   async findAll() {
@@ -46,6 +50,16 @@ export class EventsController {
   // async findTicketOptions() {
   //   return this.eventsService.findTicketOptions();
   // }
+
+  /**
+   * Comidas y bebidas que se pueden pre-ordenar al comprar la entrada. Publico
+   * como GET /events/:id: el cliente lo ve antes de iniciar sesion.
+   * { idEvents, consumo, comidas[], bebidas[] }; sin consumo, listas vacias.
+   */
+  @Get(':id/menu')
+  async menu(@Param('id', ParseIntPipe) id: number) {
+    return this.consumeDetailsService.menuDelEvento(id);
+  }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {

@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsDateString,
+  IsIn,
   IsInt,
   Min,
   Matches,
@@ -73,9 +74,13 @@ export class CreateEventDto {
   @Type(() => Number)
   readonly status?: number;
 
-  // Consumo del evento si lleva o no
-  @IsInt()
-  @Min(0)
+  /**
+   * 1 si el cliente puede pre-ordenar comida y bebida al comprar la entrada.
+   * Antes aceptaba cualquier entero (consumo = 5 pasaba).
+   */
+  @IsIn([0, 1], {
+    message: 'consumo debe ser 1 (permite pre-ordenar comida y bebida) o 0',
+  })
   @Type(() => Number)
   readonly consumo?: number;
 }

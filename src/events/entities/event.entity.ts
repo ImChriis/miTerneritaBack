@@ -39,6 +39,7 @@ export class Event {
   @Column('tinyint')
   status: number;
 
-  @Column('int')
+  /** 1 si el cliente puede pre-ordenar comida y bebida al comprar. */
+  @Column('tinyint')
   consumo: number;
 }
