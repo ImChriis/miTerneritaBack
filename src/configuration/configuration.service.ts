@@ -29,6 +29,10 @@ export class ConfigurationService {
     } else {
       Object.assign(config, updateConfigurationDto);
     }
+    // Tasa puesta a mano por el admin: vale hasta la proxima actualizacion automatica.
+    if (updateConfigurationDto.BCV !== undefined) {
+      config.fechaBCV = new Date();
+    }
     return this.configurationRepository.save(config);
   }
 }

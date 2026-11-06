@@ -72,7 +72,7 @@ export class UsersController {
   async findByCedula(
     @Param('cedula') cedula: string,
   ): Promise<UserResponseDto> {
-    const user = await this.usersService.findByCedula(cedula);
+    const user = await this.usersService.buscarPorCedula(cedula);
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }

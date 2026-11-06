@@ -16,11 +16,34 @@ export const productoDisponible = (producto: Food | Drink) =>
   producto.status === PRODUCTO_DISPONIBLE.status &&
   producto.activo === PRODUCTO_DISPONIBLE.activo;
 
+/** Una tarjeta del menu: lo justo para pintarla y anadirla al carrito. */
+export interface ProductoMenu {
+  /**
+   * Solo viene uno de los dos. Al pagar se copia tal cual en `consumos`:
+   * { idFood, cantidad } o { idDrinks, cantidad }.
+   */
+  idFood?: number;
+  idDrinks?: number;
+  nombre: string;
+  /** Descripcion corta o variante; null si no tiene. */
+  descripcion: string | null;
+  precioUsd: number;
+  /** Archivo en /assets/img; null si no tiene foto. */
+  imagen: string | null;
+  /** Botellas: personas a las que da acceso General. 0 = no incluye acceso. */
+  personas: number;
+}
+
+export interface SeccionMenu {
+  nombre: string;
+  productos: ProductoMenu[];
+}
+
 /** Lo que el cliente puede pre-ordenar en un evento. */
 export interface MenuEvento {
   idEvents: number;
   /** El admin activo el consumo para este evento. */
   consumo: boolean;
-  comidas: Food[];
-  bebidas: Drink[];
+  /** 'Comidas' y luego una por categoria de bebida, sin secciones vacias. */
+  secciones: SeccionMenu[];
 }

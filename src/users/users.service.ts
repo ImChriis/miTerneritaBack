@@ -75,6 +75,22 @@ export class UsersService {
     });
   }
 
+  /**
+   * Busqueda del admin por cedula. Las cedulas estan guardadas con y sin
+   * prefijo ('31419200', 'V-31262324'): si no hay coincidencia exacta, se
+   * compara solo la parte numerica.
+   */
+  async buscarPorCedula(cedula: string): Promise<User | null> {
+    const exacta = await this.findByCedula(cedula);
+    const digitos = cedula.replace(/\D/g, '');
+    if (exacta || !digitos) return exacta;
+    return this.usersRepository
+      .createQueryBuilder('u')
+      .where("REGEXP_REPLACE(u.cedula, '[^0-9]', '') = :digitos", { digitos })
+      .orderBy('u.id', 'ASC')
+      .getOne();
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { email },

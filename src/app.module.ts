@@ -15,6 +15,7 @@ import { ConfigurationModule } from './configuration/configuration.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ScheduleModule } from '@nestjs/schedule';
 import { join } from 'path';
 import { TicketsModule } from './tickets/tickets.module';
 import { MailModule } from './mail/mail.module';
@@ -35,6 +36,8 @@ import { validateEnv } from './config/env.validation';
       rootPath: join(process.cwd(), 'src', 'assets', 'img'),
       serveRoot: '/assets/img',
     }),
+    // Tareas programadas (tasa BCV).
+    ScheduleModule.forRoot(),
     DatabaseModule,
     AuthModule,
     UsersModule,

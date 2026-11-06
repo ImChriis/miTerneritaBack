@@ -13,6 +13,7 @@ import {
   TIME_REGEX,
   TIME_MESSAGE,
 } from '../../common/normalize-time';
+import { CATEGORIAS_EVENTO } from '../entities/event.entity';
 
 export class UpdateEventDto {
   @IsOptional()
@@ -85,4 +86,11 @@ export class UpdateEventDto {
   })
   @Type(() => Number)
   readonly consumo?: number;
+
+  /** evento (por defecto), concierto o fiesta. */
+  @IsOptional()
+  @IsIn(CATEGORIAS_EVENTO, {
+    message: `category debe ser una de: ${CATEGORIAS_EVENTO.join(', ')}`,
+  })
+  readonly category?: string;
 }

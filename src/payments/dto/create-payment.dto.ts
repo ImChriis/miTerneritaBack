@@ -1,6 +1,5 @@
 import { Transform, Type } from 'class-transformer';
 import {
-  ArrayMinSize,
   IsArray,
   IsInt,
   IsISO8601,
@@ -124,12 +123,15 @@ export class CreatePaymentDto {
   @IsISO8601()
   readonly fechaTransferencia?: string;
 
-  /** Las entradas que se compran. Al menos una. */
+  /**
+   * Las entradas que se compran. Puede ir vacio si en `consumos` hay una
+   * botella que incluye acceso: el servicio exige al menos una de las dos.
+   */
+  @IsOptional()
   @Transform(formDataArray(CreatePaymentItemDto))
   @IsArray({ message: 'items debe ser una lista de entradas' })
-  @ArrayMinSize(1, { message: 'Debes comprar al menos una entrada' })
   @ValidateNested({ each: true })
-  readonly items: CreatePaymentItemDto[];
+  readonly items?: CreatePaymentItemDto[];
 
   /**
    * Comida y bebida, opcional. Solo se admite si el evento tiene consumo.

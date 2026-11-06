@@ -141,6 +141,7 @@ const ENTEROS = new Set(['int', 'integer', 'tinyint', 'smallint', 'mediumint', '
     ['2026-09-17 indice unico noDocumento', hayIndice('payment', 'uq_payment_noDocumento')],
     ['2026-09-23 paymentdetails.usadas', hayCol('paymentdetails', 'usadas')],
     ['2026-09-23 scan_log y scan_log_detail', porTabla.has('scan_log') && porTabla.has('scan_log_detail')],
+    ['2026-10-28 catalogo de consumo (detalle, categoria, orden)', hayCol('food', 'detalle') && hayCol('food', 'orden') && hayCol('drinks', 'categoria') && hayCol('drinks', 'orden')],
   ];
   console.log('Migraciones:');
   for (const [nombre, aplicada] of estado) console.log(`  ${aplicada ? '[x]' : '[ ]'} ${nombre}`);

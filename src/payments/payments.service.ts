@@ -26,6 +26,7 @@ import { recalculatePaymentTotals } from './payment-totals';
 import { fromCents, toCents } from '../common/money';
 import { sumQuantitiesBy } from '../common/merge-lines';
 import { DocumentSequence } from './entities/document-sequence.entity';
+import { Configuration } from '../configuration/entities/configuration.entity';
 import { formatDocumentNumber } from './document-number';
 import {
   comprobantePath,
@@ -90,7 +91,10 @@ export class PaymentsService {
     // El carrito del front permite anadir la misma zona dos veces (General x1
     // y luego General x2). Antes eso daba 400; se juntan sumando cantidades,
     // porque precio y aforo se calculan igual sobre el total.
-    const items = sumQuantitiesBy(itemsRecibidos, (item) => item.idTicket);
+    const items = sumQuantitiesBy(
+      itemsRecibidos ?? [],
+      (item) => item.idTicket,
+    );
     const ticketIds = items.map((item) => item.idTicket);
 
     // READ COMMITTED es imprescindible para el control de aforo. Con el nivel
@@ -125,9 +129,11 @@ export class PaymentsService {
           );
         }
 
-        const tickets = await manager
-          .getRepository(Ticket)
-          .findBy({ idTicket: In(ticketIds) });
+        const tickets = ticketIds.length
+          ? await manager
+              .getRepository(Ticket)
+              .findBy({ idTicket: In(ticketIds) })
+          : [];
         const ticketsById = new Map(tickets.map((t) => [t.idTicket, t]));
 
         const lines: PaymentLine[] = items.map((item) => {
@@ -157,8 +163,6 @@ export class PaymentsService {
           };
         });
 
-        await this.assertCapacity(manager, event, lines);
-
         // Comida y bebida: mismas reglas que el endpoint de admin (evento con
         // consumo, productos activos, precio desde la BD).
         const consumoLines = await this.consumeDetailsService.resolveLines(
@@ -167,16 +171,44 @@ export class PaymentsService {
           consumos ?? [],
         );
 
+        // Las botellas con acceso (Old Parr Silver = 6 personas) traen esas
+        // entradas General sin costo: cuentan para el aforo y entran con el QR.
+        // Si van mas personas, el resto compra entrada.
+        const accesos = consumoLines.reduce(
+          (suma, line) => suma + (line.drink?.personas ?? 0) * line.cantidad,
+          0,
+        );
+        if (accesos > 0) {
+          lines.push({
+            ticket: await this.entradaGeneral(manager, event),
+            cantidad: accesos,
+            precio: 0,
+            total: 0,
+          });
+        }
+        if (lines.length === 0) {
+          throw new BadRequestException(
+            'Debes comprar al menos una entrada o una botella que incluya acceso',
+          );
+        }
+
+        await this.assertCapacity(manager, event, lines);
+
         // Se reserva al final, con todo ya validado: el contador queda
         // bloqueado hasta el fin de la transaccion, asi que conviene tenerlo
         // el menor tiempo posible. Orden de bloqueo fijo (evento -> contador)
         // en todas las compras: no hay interbloqueos.
         const noDocumento = await this.nextDocumentNumber(manager);
+        // Tasa BCV del dia: con ella se valida el monto pagado en Bs.
+        const [config] = await manager
+          .getRepository(Configuration)
+          .find({ order: { idConfiguration: 'ASC' }, take: 1 });
 
         const payment = await manager.getRepository(Payment).save(
           manager.getRepository(Payment).create({
             ...paymentData,
             noDocumento,
+            tasaDolar: config?.BCV ?? undefined,
             // Nombre del archivo en la carpeta privada de comprobantes, o
             // vacio en los pagos en efectivo.
             comprobante,
@@ -208,6 +240,36 @@ export class PaymentsService {
     );
 
     return this.findOne(idPayment);
+  }
+
+  /**
+   * La entrada que dan las botellas con acceso: la General del evento.
+   * shortcut: se reconoce por el nombre ("General", o la primera que empiece por
+   * "General"); si un evento necesita otra, marcar el ticket en la BD.
+   */
+  private async entradaGeneral(
+    manager: EntityManager,
+    event: Event,
+  ): Promise<Ticket> {
+    const tickets = await manager.getRepository(Ticket).find({
+      where: { idEvents: event.idEvents },
+      order: { idTicket: 'ASC' },
+    });
+    const nombre = (t: Ticket) =>
+      (t.name ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+    const general =
+      tickets.find((t) => nombre(t) === 'general') ??
+      tickets.find((t) => nombre(t).startsWith('general'));
+    if (!general) {
+      throw new ConflictException(
+        'Este evento no tiene entrada General: las botellas con acceso no estan disponibles',
+      );
+    }
+    return general;
   }
 
   /**

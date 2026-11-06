@@ -1,5 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
+/** Tipos de evento. Solo los conciertos muestran el mapa del salon. */
+export const CATEGORIAS_EVENTO = ['evento', 'concierto', 'fiesta'] as const;
+
 @Entity('events')
 export class Event {
   @PrimaryGeneratedColumn()
@@ -42,4 +45,8 @@ export class Event {
   /** 1 si el cliente puede pre-ordenar comida y bebida al comprar. */
   @Column('tinyint')
   consumo: number;
+
+  /** Una de CATEGORIAS_EVENTO. */
+  @Column({ length: 20, default: 'evento' })
+  category: string;
 }

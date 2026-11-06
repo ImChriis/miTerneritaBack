@@ -18,7 +18,13 @@ import {
   CreatePaymentConsumoDto,
   MAX_CANTIDAD_CONSUMO,
 } from '../payments/dto/create-payment-consumo.dto';
-import { MenuEvento, PRODUCTO_DISPONIBLE, productoDisponible } from './menu';
+import {
+  MenuEvento,
+  PRODUCTO_DISPONIBLE,
+  SeccionMenu,
+  productoDisponible,
+} from './menu';
+import { CATEGORIAS_BEBIDA } from '../common/producto-limites';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-request';
 import { fromCents, toCents } from '../common/money';
 import { sumQuantitiesBy } from '../common/merge-lines';
@@ -29,6 +35,18 @@ export interface ConsumoLine {
   drink?: Drink;
   cantidad: number;
   total: number;
+}
+
+/**
+ * Una botella con acceso viene con sus entradas General: si el admin la anadiera
+ * o quitara a mano, las entradas del pago quedarian descuadradas.
+ */
+function assertSinAccesoIncluido(drink?: Drink | null): void {
+  if (drink?.personas) {
+    throw new ConflictException(
+      `"${drink.description}" incluye entradas: no se corrige por aqui. Rechaza el pago y que se compre de nuevo`,
+    );
+  }
 }
 
 @Injectable()
@@ -44,9 +62,9 @@ export class ConsumeDetailsService {
   ) {}
 
   /**
-   * GET /events/:id/menu: lo que el cliente puede pre-ordenar en un evento.
-   * Si el evento no tiene consumo, las listas vienen vacias (200, no error):
-   * el front muestra "este evento no tiene pre-orden" sin manejar un 4xx.
+   * GET /events/:id/menu: lo que el cliente puede pre-ordenar en un evento,
+   * por secciones y en el orden de la carta. Si el evento no tiene consumo,
+   * `secciones` viene vacio (200, no error): el front salta al pago.
    *
    * Hoy la carta es la misma para todos los eventos. Si mas adelante cada
    * evento tiene la suya, solo cambia este metodo y productoDisponible: la
@@ -60,20 +78,45 @@ export class ConsumeDetailsService {
       throw new NotFoundException('Evento no encontrado');
     }
     if (event.consumo !== 1) {
-      return { idEvents, consumo: false, comidas: [], bebidas: [] };
+      return { idEvents, consumo: false, secciones: [] };
     }
 
     const [comidas, bebidas] = await Promise.all([
       this.dataSource.getRepository(Food).find({
         where: PRODUCTO_DISPONIBLE,
-        order: { description: 'ASC' },
+        order: { orden: 'ASC', description: 'ASC' },
       }),
       this.dataSource.getRepository(Drink).find({
         where: PRODUCTO_DISPONIBLE,
-        order: { description: 'ASC' },
+        order: { orden: 'ASC', description: 'ASC' },
       }),
     ]);
-    return { idEvents, consumo: true, comidas, bebidas };
+
+    // La columna `description` guarda el nombre; la descripcion es `detalle`.
+    const tarjeta = (p: Food | Drink) => ({
+      nombre: p.description ?? '',
+      descripcion: p.detalle || null,
+      precioUsd: Number(p.price),
+      imagen: p.image || null,
+      personas: (p as Drink).personas ?? 0,
+    });
+    const secciones: SeccionMenu[] = [
+      {
+        nombre: 'Comidas',
+        productos: comidas.map((c) => ({ idFood: c.idFood, ...tarjeta(c) })),
+      },
+      ...CATEGORIAS_BEBIDA.map((categoria) => ({
+        nombre: categoria,
+        productos: bebidas
+          .filter((b) => b.categoria === categoria)
+          .map((b) => ({ idDrinks: b.idDrinks, ...tarjeta(b) })),
+      })),
+    ];
+    return {
+      idEvents,
+      consumo: true,
+      secciones: secciones.filter((s) => s.productos.length > 0),
+    };
   }
 
   /**
@@ -200,6 +243,7 @@ export class ConsumeDetailsService {
         const lines = await this.resolveLines(manager, payment.idEvents, [
           consumo,
         ]);
+        assertSinAccesoIncluido(lines[0]?.drink);
         const [row] = await this.createForPayment(manager, payment, lines);
         await recalculatePaymentTotals(manager, payment.idPayment);
         return row.idConsumeDetails;
@@ -256,11 +300,12 @@ export class ConsumeDetailsService {
     await this.dataSource.transaction('READ COMMITTED', async (manager) => {
       const row = await manager.getRepository(ConsumeDetails).findOne({
         where: { idConsumeDetails: id },
-        relations: ['idPayment'],
+        relations: ['idPayment', 'idDrinks'],
       });
       if (!row) {
         throw new NotFoundException('Detalle de consumo no encontrado');
       }
+      assertSinAccesoIncluido(row.idDrinks);
 
       const payment = await this.findEditablePayment(
         manager,

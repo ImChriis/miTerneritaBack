@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -48,11 +49,12 @@ export class PaymentsController {
     @Body() createPaymentDto: CreatePaymentDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    // Opcional: los pagos en efectivo no tienen comprobante. Exigirlo en el
-    // flujo de transferencia es cosa del front, asi que la API acepta pagos
-    // sin el; el admin debe revisarlo antes de aprobar. Si llega, se valida.
+    // Un cliente siempre paga por transferencia, pago movil o Zelle: necesita
+    // comprobante. Solo el admin registra pagos en efectivo sin el.
     if (comprobante) {
       await assertComprobanteReal(comprobante);
+    } else if (req.user.role !== 'admin') {
+      throw new BadRequestException('Adjunta el comprobante de pago');
     }
 
     return this.paymentsService.create(

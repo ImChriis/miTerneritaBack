@@ -17,6 +17,11 @@ export class Configuration {
   @Column('decimal', { nullable: true })
   tasaDolar: number;
 
-  @Column('decimal', { nullable: true })
+  /** Tasa oficial BCV (Bs por USD). La actualiza TasaBcvService. */
+  @Column('decimal', { precision: 12, scale: 4, nullable: true })
   BCV: number;
+
+  /** Fecha de la tasa BCV guardada. */
+  @Column({ type: 'datetime', nullable: true })
+  fechaBCV: Date | null;
 }
