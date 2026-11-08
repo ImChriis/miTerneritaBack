@@ -1,15 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { MailService } from './mail.service';
-import { join } from 'path';
+import { MailService, templateDir } from './mail.service';
 import { ConfigModule } from '@nestjs/config';
 import { HandlebarsAdapter } from './handlebars.adapter';
 import { MailController } from './mail.controller';
-
-const templateDir =
-  process.env.NODE_ENV === 'production'
-    ? join(__dirname, 'templates')
-    : join(process.cwd(), 'src', 'mail', 'templates');
 
 @Module({
   imports: [
@@ -28,13 +22,10 @@ const templateDir =
         socketTimeout: 10000,
       },
       defaults: {
-        from: `"No Reply" <${process.env.MAIL_USER}>`,
+        from: `"Mi Ternerita House" <${process.env.MAIL_USER}>`,
       },
       template: {
-        dir:
-          process.env.NODE_ENV === 'production'
-            ? join(__dirname, 'templates') // cuando corre desde dist/mail
-            : join(process.cwd(), 'src', 'mail', 'templates'), // en dev lee desde src
+        dir: templateDir,
         adapter: new HandlebarsAdapter(templateDir),
         options: {
           strict: true,

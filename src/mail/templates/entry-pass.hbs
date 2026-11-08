@@ -3,55 +3,95 @@
   <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width"/>
-    <title>Tu entrada</title>
+    <meta name="color-scheme" content="dark"/>
+    <meta name="supported-color-schemes" content="dark"/>
+    <title>Tu entrada para {{eventName}}</title>
   </head>
-  <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#333;">
-    <table role="presentation" width="100%" style="border-collapse:collapse;">
+  <body style="margin:0;padding:0;background:#0a0a0c;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f2ec;">
+    <!-- Texto de vista previa en la bandeja -->
+    <div style="display:none;max-height:0;overflow:hidden;">Pago aprobado. Tu QR para {{eventName}} está listo.</div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0a0a0c;">
       <tr>
-        <td align="center" style="padding:24px 12px;">
-          <table role="presentation" style="width:600px;max-width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e6e9ee;">
+        <td align="center" style="padding:32px 12px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" style="width:560px;max-width:100%;border-collapse:collapse;">
+
+            <!-- Marca -->
             <tr>
-              <td style="background:#0b63d3;color:#fff;padding:18px 24px;">
-                <h1 style="margin:0;font-size:20px;">Tu entrada</h1>
+              <td align="center" style="padding:0 0 24px;">
+                <img src="{{logoImage}}" alt="Mi Ternerita House" width="64" style="display:block;width:64px;height:auto;margin:0 auto 10px;" />
+                <div style="font-size:18px;font-weight:700;letter-spacing:0.02em;color:#f5f2ec;">Mi Ternerita</div>
+                <div style="font-size:10px;font-weight:700;letter-spacing:0.42em;color:#aaa7a2;">HOUSE</div>
               </td>
             </tr>
 
+            <!-- Ticket -->
             <tr>
-              <td style="padding:20px 24px;">
-                <p style="margin:0 0 12px 0;font-size:15px;">Hola {{userName}},</p>
+              <td style="background:#15151a;border:1px solid #26262f;border-radius:20px 20px 0 0;border-bottom:0;padding:28px 28px 22px;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:0.16em;color:#5b7cff;text-transform:uppercase;">&#10003; Pago aprobado</div>
+                <h1 style="margin:10px 0 6px;font-size:28px;line-height:1.15;color:#f5f2ec;">{{eventName}}</h1>
+                <p style="margin:0;font-size:15px;line-height:1.5;color:#aaa7a2;">¡Hola {{userName}}! Ya tienes tu lugar. Te esperamos.</p>
 
-                <p style="margin:0 0 18px 0;font-size:14px;line-height:1.5;color:#555;">
-                  Tu pago ha sido aprobado. Este es el código que deberás presentar en la entrada de <strong>{{eventName}}</strong>.
-                </p>
-
-                <table role="presentation" width="100%" style="margin:18px 0 16px 0;border-collapse:collapse;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;border-collapse:collapse;">
                   <tr>
-                    <td style="padding:12px;background:#f7f9fc;border-radius:6px;border:1px solid #eef2f7;">
-                      <strong style="display:block;font-size:13px;margin-bottom:6px;color:#0b63d3;">Evento</strong>
-                      <span style="font-size:14px;">{{eventName}}</span>
-                      {{#if eventDate}}
-                        <span style="display:block;font-size:13px;color:#666;margin-top:4px;">Fecha: {{eventDate}}</span>
-                      {{/if}}
-                      {{#if eventRoom}}
-                        <span style="display:block;font-size:13px;color:#666;margin-top:2px;">Sala: {{eventRoom}}</span>
-                      {{/if}}
+                    {{#if eventDate}}
+                    <td valign="top" style="padding:0 12px 0 0;">
+                      <div style="font-size:11px;letter-spacing:0.08em;color:#77756f;text-transform:uppercase;">Fecha</div>
+                      <div style="margin-top:4px;font-size:15px;font-weight:700;color:#f5f2ec;">{{eventDate}}</div>
+                    </td>
+                    {{/if}}
+                    {{#if eventTime}}
+                    <td valign="top" style="padding:0 12px 0 0;">
+                      <div style="font-size:11px;letter-spacing:0.08em;color:#77756f;text-transform:uppercase;">Hora</div>
+                      <div style="margin-top:4px;font-size:15px;font-weight:700;color:#f5f2ec;">{{eventTime}}</div>
+                    </td>
+                    {{/if}}
+                    {{#if eventRoom}}
+                    <td valign="top">
+                      <div style="font-size:11px;letter-spacing:0.08em;color:#77756f;text-transform:uppercase;">Salón</div>
+                      <div style="margin-top:4px;font-size:15px;font-weight:700;color:#f5f2ec;">{{eventRoom}}</div>
+                    </td>
+                    {{/if}}
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Troquel del ticket -->
+            <tr>
+              <td style="background:#15151a;border-left:1px solid #26262f;border-right:1px solid #26262f;padding:0;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                  <tr>
+                    <td width="14" style="width:14px;height:28px;background:#0a0a0c;border-radius:0 14px 14px 0;font-size:0;line-height:0;">&nbsp;</td>
+                    <td style="padding:0 10px;"><div style="border-top:2px dashed #2f2f3a;font-size:0;line-height:0;">&nbsp;</div></td>
+                    <td width="14" style="width:14px;height:28px;background:#0a0a0c;border-radius:14px 0 0 14px;font-size:0;line-height:0;">&nbsp;</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- QR -->
+            <tr>
+              <td align="center" style="background:#15151a;border:1px solid #26262f;border-top:0;border-radius:0 0 20px 20px;padding:20px 28px 28px;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:0.16em;color:#efe7d4;text-transform:uppercase;margin-bottom:14px;">Muestra este código en la puerta</div>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                  <tr>
+                    <td style="background:#ffffff;border-radius:16px;padding:12px;">
+                      <img src="{{qrCodeImage}}" alt="Código QR de tu entrada" width="220" style="display:block;width:220px;height:220px;" />
                     </td>
                   </tr>
                 </table>
-
-                <div style="text-align:center;margin:22px 0;">
-                  <img src="{{qrCodeImage}}" alt="Código QR de tu entrada" style="max-width:260px;border:1px solid #e6e9ee;border-radius:6px;padding:8px;background:#fff;" />
-                </div>
-
-                <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#777;">
-                  Guarda este correo. El código es válido para un solo acceso y no debe compartirse: quien lo presente podrá entrar en tu lugar.
+                <p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:#aaa7a2;">
+                  Sube el brillo de la pantalla al llegar. El código es personal:<br/>quien lo presente primero entra en tu lugar, así que no lo compartas.
                 </p>
               </td>
             </tr>
 
+            <!-- Pie -->
             <tr>
-              <td style="padding:14px 24px;background:#fafbfc;border-top:1px solid #eef2f7;font-size:12px;color:#999;">
-                &copy; {{currentYear}} Mi Ternerita
+              <td align="center" style="padding:24px 12px 0;font-size:12px;line-height:1.6;color:#77756f;">
+                Mi Ternerita House · Av. Fuerzas Armadas, Maracaibo, Zulia<br/>
+                &copy; {{currentYear}} Mi Ternerita. Nos vemos en la noche.
               </td>
             </tr>
           </table>

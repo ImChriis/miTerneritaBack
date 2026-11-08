@@ -3,12 +3,29 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { SendTicketConfirmationDto } from './dto/send-ticket-confirmation.dto';
 import { generateQrPng, QR_CONTENT_ID } from './qr';
 import { formatDateOnly } from '../common/format-date';
+import { join } from 'path';
+
+/** Plantillas y logo: en dist/mail al correr compilado, en src/mail en dev. */
+export const templateDir =
+  process.env.NODE_ENV === 'production'
+    ? join(__dirname, 'templates')
+    : join(process.cwd(), 'src', 'mail', 'templates');
+
+const LOGO_CID = 'logo-miternerita';
+
+/** '22:00:00' -> '10:00 PM' */
+const hora12 = (time?: string) => {
+  const [h, m] = (time ?? '').split(':').map(Number);
+  if (Number.isNaN(h) || !time) return null;
+  return `${h % 12 || 12}:${String(m || 0).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+};
 
 export interface SendEntryPassOptions {
   userEmail: string;
   userName?: string;
   eventName?: string;
   eventDate?: string;
+  eventTime?: string;
   eventRoom?: string;
   /** Token opaco que va codificado en el QR. */
   token: string;
@@ -25,8 +42,15 @@ export class MailService {
    * codigo que se escanea en puerta.
    */
   async sendEntryPass(options: SendEntryPassOptions) {
-    const { userEmail, userName, eventName, eventDate, eventRoom, token } =
-      options;
+    const {
+      userEmail,
+      userName,
+      eventName,
+      eventDate,
+      eventTime,
+      eventRoom,
+      token,
+    } = options;
 
     try {
       const qr = await generateQrPng(token);
@@ -39,12 +63,19 @@ export class MailService {
           userName: userName || 'usuario',
           eventName: eventName || 'el evento',
           eventDate: formatDateOnly(eventDate),
+          eventTime: hora12(eventTime),
           eventRoom: eventRoom || null,
           qrCodeImage: `cid:${QR_CONTENT_ID}`,
+          logoImage: `cid:${LOGO_CID}`,
           currentYear: new Date().getFullYear(),
         },
         attachments: [
           { filename: 'entrada.png', content: qr, cid: QR_CONTENT_ID },
+          {
+            filename: 'logo.png',
+            path: join(templateDir, 'logo.png'),
+            cid: LOGO_CID,
+          },
         ],
       });
 

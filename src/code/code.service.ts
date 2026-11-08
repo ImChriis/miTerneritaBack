@@ -283,6 +283,7 @@ export class CodeService {
         userName: payment.idUser?.name,
         eventName: payment.idEvents?.name,
         eventDate: payment.idEvents?.date,
+        eventTime: payment.idEvents?.time,
         eventRoom: payment.idEvents?.room,
         token,
       });
