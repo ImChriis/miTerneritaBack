@@ -2,94 +2,73 @@
 <html lang="es">
   <head>
     <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width"/>
-    <meta name="color-scheme" content="dark"/>
-    <meta name="supported-color-schemes" content="dark"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <!-- Base clara a proposito: Gmail movil invierte los correos oscuros y los deja ilegibles. -->
+    <meta name="color-scheme" content="light only"/>
+    <meta name="supported-color-schemes" content="light"/>
     <title>Tu entrada para {{eventName}}</title>
   </head>
-  <body style="margin:0;padding:0;background:#0a0a0c;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f2ec;">
-    <!-- Texto de vista previa en la bandeja -->
+  <body style="margin:0;padding:0;background:#f2efe8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#16151a;">
     <div style="display:none;max-height:0;overflow:hidden;">Pago aprobado. Tu QR para {{eventName}} está listo.</div>
 
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0a0a0c;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f2efe8" style="background:#f2efe8;">
       <tr>
-        <td align="center" style="padding:32px 12px;">
-          <table role="presentation" cellpadding="0" cellspacing="0" style="width:560px;max-width:100%;border-collapse:collapse;">
+        <td align="center" style="padding:24px 12px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;">
 
             <!-- Marca -->
             <tr>
-              <td align="center" style="padding:0 0 24px;">
-                <img src="{{logoImage}}" alt="Mi Ternerita House" width="64" style="display:block;width:64px;height:auto;margin:0 auto 10px;" />
-                <div style="font-size:18px;font-weight:700;letter-spacing:0.02em;color:#f5f2ec;">Mi Ternerita</div>
-                <div style="font-size:10px;font-weight:700;letter-spacing:0.42em;color:#aaa7a2;">HOUSE</div>
+              <td align="center" style="padding:0 0 18px;">
+                <img src="{{logoImage}}" alt="Mi Ternerita House" width="56" height="56" style="display:block;width:56px;height:56px;margin:0 auto 8px;border:0;" />
+                <div style="font-size:17px;font-weight:700;color:#16151a;">Mi Ternerita</div>
+                <div style="font-size:10px;font-weight:700;letter-spacing:4px;color:#8a867f;">HOUSE</div>
               </td>
             </tr>
 
             <!-- Ticket -->
             <tr>
-              <td style="background:#15151a;border:1px solid #26262f;border-radius:20px 20px 0 0;border-bottom:0;padding:28px 28px 22px;">
-                <div style="font-size:11px;font-weight:700;letter-spacing:0.16em;color:#5b7cff;text-transform:uppercase;">&#10003; Pago aprobado</div>
-                <h1 style="margin:10px 0 6px;font-size:28px;line-height:1.15;color:#f5f2ec;">{{eventName}}</h1>
-                <p style="margin:0;font-size:15px;line-height:1.5;color:#aaa7a2;">¡Hola {{userName}}! Ya tienes tu lugar. Te esperamos.</p>
+              <td bgcolor="#ffffff" style="background:#ffffff;border:1px solid #e4dfd4;border-radius:16px;padding:24px 22px;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#2f54eb;">&#10003; PAGO APROBADO</div>
+                <h1 style="margin:8px 0 6px;font-size:26px;line-height:1.2;color:#16151a;">{{eventName}}</h1>
+                <p style="margin:0;font-size:15px;line-height:1.5;color:#57544e;">¡Hola {{userName}}! Ya tienes tu lugar. Te esperamos.</p>
 
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;border-collapse:collapse;">
+                <!-- Datos: una columna, se lee bien en cualquier pantalla -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;">
+                  {{#if eventDate}}
                   <tr>
-                    {{#if eventDate}}
-                    <td valign="top" style="padding:0 12px 0 0;">
-                      <div style="font-size:11px;letter-spacing:0.08em;color:#77756f;text-transform:uppercase;">Fecha</div>
-                      <div style="margin-top:4px;font-size:15px;font-weight:700;color:#f5f2ec;">{{eventDate}}</div>
-                    </td>
-                    {{/if}}
-                    {{#if eventTime}}
-                    <td valign="top" style="padding:0 12px 0 0;">
-                      <div style="font-size:11px;letter-spacing:0.08em;color:#77756f;text-transform:uppercase;">Hora</div>
-                      <div style="margin-top:4px;font-size:15px;font-weight:700;color:#f5f2ec;">{{eventTime}}</div>
-                    </td>
-                    {{/if}}
-                    {{#if eventRoom}}
-                    <td valign="top">
-                      <div style="font-size:11px;letter-spacing:0.08em;color:#77756f;text-transform:uppercase;">Salón</div>
-                      <div style="margin-top:4px;font-size:15px;font-weight:700;color:#f5f2ec;">{{eventRoom}}</div>
-                    </td>
-                    {{/if}}
+                    <td style="padding:8px 0;border-top:1px solid #efebe3;font-size:13px;color:#8a867f;">Fecha</td>
+                    <td align="right" style="padding:8px 0;border-top:1px solid #efebe3;font-size:15px;font-weight:700;color:#16151a;">{{eventDate}}</td>
                   </tr>
+                  {{/if}}
+                  {{#if eventTime}}
+                  <tr>
+                    <td style="padding:8px 0;border-top:1px solid #efebe3;font-size:13px;color:#8a867f;">Hora</td>
+                    <td align="right" style="padding:8px 0;border-top:1px solid #efebe3;font-size:15px;font-weight:700;color:#16151a;">{{eventTime}}</td>
+                  </tr>
+                  {{/if}}
+                  {{#if eventRoom}}
+                  <tr>
+                    <td style="padding:8px 0;border-top:1px solid #efebe3;font-size:13px;color:#8a867f;">Salón</td>
+                    <td align="right" style="padding:8px 0;border-top:1px solid #efebe3;font-size:15px;font-weight:700;color:#16151a;">{{eventRoom}}</td>
+                  </tr>
+                  {{/if}}
                 </table>
-              </td>
-            </tr>
 
-            <!-- Troquel del ticket -->
-            <tr>
-              <td style="background:#15151a;border-left:1px solid #26262f;border-right:1px solid #26262f;padding:0;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-                  <tr>
-                    <td width="14" style="width:14px;height:28px;background:#0a0a0c;border-radius:0 14px 14px 0;font-size:0;line-height:0;">&nbsp;</td>
-                    <td style="padding:0 10px;"><div style="border-top:2px dashed #2f2f3a;font-size:0;line-height:0;">&nbsp;</div></td>
-                    <td width="14" style="width:14px;height:28px;background:#0a0a0c;border-radius:14px 0 0 14px;font-size:0;line-height:0;">&nbsp;</td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
+                <!-- Troquel -->
+                <div style="margin:20px 0;border-top:2px dashed #e4dfd4;font-size:0;line-height:0;">&nbsp;</div>
 
-            <!-- QR -->
-            <tr>
-              <td align="center" style="background:#15151a;border:1px solid #26262f;border-top:0;border-radius:0 0 20px 20px;padding:20px 28px 28px;">
-                <div style="font-size:11px;font-weight:700;letter-spacing:0.16em;color:#efe7d4;text-transform:uppercase;margin-bottom:14px;">Muestra este código en la puerta</div>
-                <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-                  <tr>
-                    <td style="background:#ffffff;border-radius:16px;padding:12px;">
-                      <img src="{{qrCodeImage}}" alt="Código QR de tu entrada" width="220" style="display:block;width:220px;height:220px;" />
-                    </td>
-                  </tr>
-                </table>
-                <p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:#aaa7a2;">
-                  Sube el brillo de la pantalla al llegar. El código es personal:<br/>quien lo presente primero entra en tu lugar, así que no lo compartas.
+                <!-- QR -->
+                <div style="text-align:center;font-size:11px;font-weight:700;letter-spacing:2px;color:#16151a;margin-bottom:12px;">MUESTRA ESTE CÓDIGO EN LA PUERTA</div>
+                <img src="{{qrCodeImage}}" alt="Código QR de tu entrada" width="220" height="220" style="display:block;width:220px;height:220px;max-width:100%;margin:0 auto;border:0;" />
+                <p style="margin:14px 0 0;text-align:center;font-size:13px;line-height:1.5;color:#57544e;">
+                  Sube el brillo de la pantalla al llegar. El código es personal: quien lo presente primero entra en tu lugar, así que no lo compartas.
                 </p>
               </td>
             </tr>
 
             <!-- Pie -->
             <tr>
-              <td align="center" style="padding:24px 12px 0;font-size:12px;line-height:1.6;color:#77756f;">
+              <td align="center" style="padding:20px 12px 0;font-size:12px;line-height:1.6;color:#8a867f;">
                 Mi Ternerita House · Av. Fuerzas Armadas, Maracaibo, Zulia<br/>
                 &copy; {{currentYear}} Mi Ternerita. Nos vemos en la noche.
               </td>
