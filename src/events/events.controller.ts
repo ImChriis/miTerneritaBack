@@ -19,9 +19,19 @@ import { UpdateEventDto } from './dto/update-event.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { webpUploadOptions } from '../common/uploads/webp-upload';
+import {
+  FileFieldsInterceptor,
+  FilesInterceptor,
+} from '@nestjs/platform-express';
+import { SkipThrottle } from '@nestjs/throttler';
+import {
+  galeriaUploadOptions,
+  webpUploadOptions,
+} from '../common/uploads/webp-upload';
 import { discardUploadedFiles } from '../common/uploads/upload-cleanup';
+
+/** Fotos por peticion; el front parte la seleccion en tandas de este tamano. */
+const FOTOS_POR_TANDA = 20;
 
 /**
  * imageL e imageS se aceptan en el formulario pero el evento no tiene columnas
@@ -59,6 +69,49 @@ export class EventsController {
   @Get(':id/menu')
   async menu(@Param('id', ParseIntPipe) id: number) {
     return this.consumeDetailsService.menuDelEvento(id);
+  }
+
+  /** Galeria del evento ("revive tu noche"). Publica, solo lectura. */
+  @Get(':id/photos')
+  async photos(@Param('id', ParseIntPipe) id: number) {
+    return this.eventsService.photos(id);
+  }
+
+  /**
+   * Sube fotos .webp a la galeria. El front las manda en tandas de
+   * FOTOS_POR_TANDA; sin SkipThrottle, unas cientos de fotos chocarian con el
+   * limite global de peticiones por minuto.
+   */
+  @Post(':id/photos')
+  @SkipThrottle()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @UseInterceptors(
+    FilesInterceptor(
+      'photos',
+      FOTOS_POR_TANDA,
+      galeriaUploadOptions(FOTOS_POR_TANDA),
+    ),
+  )
+  async addPhotos(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    if (!files?.length) {
+      throw new BadRequestException('Sube al menos una foto .webp');
+    }
+    return this.eventsService.addPhotos(id, files);
+  }
+
+  @Delete(':id/photos/:photoId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async removePhoto(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('photoId', ParseIntPipe) photoId: number,
+  ) {
+    await this.eventsService.removePhoto(id, photoId);
+    return { message: 'Foto eliminada' };
   }
 
   @Get(':id')

@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User } from '../users/entities/user.entity';
 import { Role } from '../users/entities/role.entity';
 import { Event } from '../events/entities/event.entity';
+import { EventPhoto } from '../events/entities/event-photo.entity';
 import { Food } from '../food/entities/food.entity';
 import { Drink } from '../drinks/entities/drink.entity';
 import { ConsumeDetails } from '../consumeDetails/entities/consumeDetail.entity';
@@ -34,6 +35,7 @@ import { Ticket } from '../tickets/entities/ticket.entity';
           User,
           Role,
           Event,
+          EventPhoto,
           Food,
           Drink,
           Ticket,

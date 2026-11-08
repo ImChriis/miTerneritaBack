@@ -2,7 +2,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
+import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Ticket } from './entities/ticket.entity';
@@ -105,6 +107,15 @@ export class TicketsService {
 
   async remove(id: number): Promise<void> {
     const ticket = await this.findOne(id);
+    // paymentdetails.idTicket es FK: con ventas el DELETE fallaba con un 500.
+    const ventas = await this.ticketsRepository.manager
+      .getRepository(PaymentDetails)
+      .count({ where: { idTicket: id } });
+    if (ventas > 0) {
+      throw new ConflictException(
+        `"${ticket.name}" ya tiene ventas: márcala como no disponible en lugar de borrarla`,
+      );
+    }
     await this.ticketsRepository.remove(ticket);
   }
 }

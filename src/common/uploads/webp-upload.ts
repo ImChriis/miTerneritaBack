@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
 import { diskStorage } from 'multer';
 import { existsSync } from 'fs';
+import { randomUUID } from 'crypto';
 import { basename, extname, join } from 'path';
 
 /**
@@ -85,6 +86,24 @@ interface WebpUploadConfig {
    * cuando un mismo formulario sube varias imagenes, para que no colisionen.
    */
   suffixWithFieldName?: boolean;
+}
+
+/** Galeria de los eventos: pueden ser cientos de fotos, van en su carpeta. */
+export const GALERIA_DIR = join(UPLOADS_DIR, 'galeria');
+
+/**
+ * Subida de fotos de la galeria. Nombre aleatorio: los nombres originales
+ * (IMG_0001.webp) se repiten entre eventos y no aportan nada.
+ */
+export function galeriaUploadOptions(maxFiles: number): MulterOptions {
+  return {
+    storage: diskStorage({
+      destination: GALERIA_DIR,
+      filename: (_req, _file, callback) => callback(null, `${randomUUID()}.webp`),
+    }),
+    fileFilter: webpFileFilter,
+    limits: { fileSize: MAX_FILE_SIZE_BYTES, files: maxFiles },
+  };
 }
 
 export function webpUploadOptions({

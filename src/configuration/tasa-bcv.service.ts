@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron } from '@nestjs/schedule';
 import { Repository } from 'typeorm';
@@ -33,14 +38,19 @@ export class TasaBcvService implements OnApplicationBootstrap {
     void this.actualizar();
   }
 
+  /**
+   * `forzar` (boton del dashboard): consulta aunque ya se tenga la tasa de hoy
+   * y, si la API falla, lo dice en vez de callarlo.
+   */
   @Cron('0 */3 * * *', { timeZone: 'America/Caracas' })
-  async actualizar(): Promise<void> {
+  async actualizar(forzar = false): Promise<void> {
     const [config] = await this.configurationRepository.find({
       order: { idConfiguration: 'ASC' },
       take: 1,
     });
     if (!config) return;
     if (
+      !forzar &&
       config.BCV &&
       config.fechaBCV &&
       diaCaracas(config.fechaBCV) >= diaCaracas(new Date())
@@ -73,6 +83,11 @@ export class TasaBcvService implements OnApplicationBootstrap {
       this.logger.warn(
         `No se pudo actualizar la tasa BCV, se mantiene ${config.BCV ?? 'la anterior'}: ${(error as Error).message}`,
       );
+      if (forzar) {
+        throw new ServiceUnavailableException(
+          'No se pudo consultar la tasa del BCV; se mantiene la anterior',
+        );
+      }
     }
   }
 }

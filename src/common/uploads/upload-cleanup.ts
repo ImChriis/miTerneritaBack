@@ -36,7 +36,7 @@ export function uploadedFiles(req: RequestWithFiles): Express.Multer.File[] {
  * el filtro global de excepciones.
  */
 export async function discardUploadedFiles(
-  files: Express.Multer.File[],
+  files: Pick<Express.Multer.File, 'path'>[],
 ): Promise<void> {
   await Promise.all(
     files

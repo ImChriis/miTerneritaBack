@@ -303,7 +303,7 @@ export class PaymentsService {
   private async assertCapacity(
     manager: EntityManager,
     event: Event,
-    lines: PaymentLine[],
+    lines: Pick<PaymentLine, 'cantidad'>[],
   ): Promise<void> {
     const row = await manager
       .getRepository(PaymentDetails)
@@ -402,8 +402,32 @@ export class PaymentsService {
     const payment = await this.findOne(id);
     const wasApproved = payment.status === PaymentStatus.Aprobado;
 
-    payment.status = updateStatusDto.status;
-    const updated = await this.paymentsRepository.save(payment);
+    const updated = await this.dataSource.transaction(
+      'READ COMMITTED',
+      async (manager) => {
+        // Un pago Rechazado libero su cupo. Si se reactiva (Pendiente o
+        // Aprobado) vuelve a ocupar aforo: antes no se revisaba y se podia
+        // vender por encima de la capacidad del evento.
+        if (
+          payment.status === PaymentStatus.Rechazado &&
+          updateStatusDto.status !== PaymentStatus.Rechazado
+        ) {
+          const event = await manager.getRepository(Event).findOneOrFail({
+            where: { idEvents: payment.idEvents.idEvents },
+            lock: { mode: 'pessimistic_write' },
+          });
+          await this.assertCapacity(
+            manager,
+            event,
+            (payment.paymentDetails ?? [])
+              .filter((d) => !d.isDeleted)
+              .map((d) => ({ cantidad: d.ticketNum ?? 1 })),
+          );
+        }
+        payment.status = updateStatusDto.status;
+        return manager.getRepository(Payment).save(payment);
+      },
+    );
 
     // Al aprobar se emite la entrada y se envia por correo. issueForPayment es
     // idempotente, asi que reaprobar no invalida el QR ya enviado.
