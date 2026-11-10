@@ -91,6 +91,60 @@ export class MailService {
   }
 
   /**
+   * Aviso de pago rechazado. Si el pago ya habia sido aprobado, avisa que el QR
+   * dejo de valer. Igual que la entrada, un fallo de correo no se relanza.
+   */
+  async sendPaymentRejected(options: {
+    userEmail: string;
+    userName?: string;
+    eventName?: string;
+    noDocumento?: string | null;
+    total?: number | string | null;
+    referencia?: string | null;
+    teniaEntrada: boolean;
+    soporteEmail?: string | null;
+    soporteTelefono?: string | null;
+  }) {
+    const { userEmail, eventName } = options;
+    try {
+      await this.mailerService.sendMail({
+        to: userEmail,
+        subject: `Pago rechazado: ${eventName ?? 'tu compra'}`,
+        template: 'payment-rejected',
+        context: {
+          userName: options.userName || 'usuario',
+          eventName: eventName || 'el evento',
+          noDocumento: options.noDocumento || null,
+          total: options.total ? Number(options.total).toFixed(2) : null,
+          referencia: options.referencia || null,
+          teniaEntrada: options.teniaEntrada,
+          soporteEmail: options.soporteEmail || null,
+          soporteTelefono: options.soporteTelefono || null,
+          // wa.me pide el numero con codigo de pais y sin simbolos: 0414... -> 58414...
+          soporteWhatsapp: options.soporteTelefono
+            ? options.soporteTelefono.replace(/\D/g, '').replace(/^0/, '58')
+            : null,
+          logoImage: `cid:${LOGO_CID}`,
+          currentYear: new Date().getFullYear(),
+        },
+        attachments: [
+          {
+            filename: 'logo.png',
+            path: join(templateDir, 'logo.png'),
+            cid: LOGO_CID,
+          },
+        ],
+      });
+      this.logger.log(`Aviso de pago rechazado enviado a ${userEmail}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Error enviando el aviso de pago rechazado a ${userEmail}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  /**
    * Confirmacion de que la entrada ya fue escaneada. Es un justificante, no
    * sirve para entrar.
    */

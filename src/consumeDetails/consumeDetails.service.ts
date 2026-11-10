@@ -22,6 +22,7 @@ import {
   MenuEvento,
   PRODUCTO_DISPONIBLE,
   SeccionMenu,
+  personasConAcceso,
   productoDisponible,
 } from './menu';
 import { CATEGORIAS_BEBIDA } from '../common/producto-limites';
@@ -42,7 +43,8 @@ export interface ConsumoLine {
  * o quitara a mano, las entradas del pago quedarian descuadradas.
  */
 function assertSinAccesoIncluido(drink?: Drink | null): void {
-  if (drink?.personas) {
+  if (!drink) return;
+  if (personasConAcceso(drink)) {
     throw new ConflictException(
       `"${drink.description}" incluye entradas: no se corrige por aqui. Rechaza el pago y que se compre de nuevo`,
     );
@@ -98,7 +100,7 @@ export class ConsumeDetailsService {
       descripcion: p.detalle || null,
       precioUsd: Number(p.price),
       imagen: p.image || null,
-      personas: (p as Drink).personas ?? 0,
+      personas: personasConAcceso(p),
     });
     const secciones: SeccionMenu[] = [
       {

@@ -6,14 +6,23 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  In,
+  MoreThan,
+  Not,
+  Repository,
+} from 'typeorm';
 import { Payment } from './entities/payment.entity';
+import { Reserva } from './entities/reserva.entity';
 import { User } from '../users/entities/user.entity';
 import { Event } from '../events/entities/event.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
 import { PaymentStatus } from './enums/payment-status.enum';
 import { CodeService } from '../code/code.service';
+import { MailService } from '../mail/mail.service';
 import { Ticket } from '../tickets/entities/ticket.entity';
 import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity';
 import {
@@ -28,6 +37,7 @@ import { sumQuantitiesBy } from '../common/merge-lines';
 import { DocumentSequence } from './entities/document-sequence.entity';
 import { Configuration } from '../configuration/entities/configuration.entity';
 import { formatDocumentNumber } from './document-number';
+import { ACCESO_POR_BOTELLA, personasConAcceso } from '../consumeDetails/menu';
 import {
   comprobantePath,
   MIME_POR_EXTENSION,
@@ -54,6 +64,7 @@ export class PaymentsService {
     private paymentsRepository: Repository<Payment>,
 
     private readonly codeService: CodeService,
+    private readonly mailService: MailService,
 
     private readonly paymentDetailsService: PaymentDetailsService,
 
@@ -123,11 +134,7 @@ export class PaymentsService {
         if (!event) {
           throw new NotFoundException('Evento no encontrado');
         }
-        if (event.status !== 1) {
-          throw new BadRequestException(
-            'El evento no esta disponible para la venta',
-          );
-        }
+        assertVentaAbierta(event, requester.role === 'admin');
 
         const tickets = ticketIds.length
           ? await manager
@@ -175,7 +182,7 @@ export class PaymentsService {
         // entradas General sin costo: cuentan para el aforo y entran con el QR.
         // Si van mas personas, el resto compra entrada.
         const accesos = consumoLines.reduce(
-          (suma, line) => suma + (line.drink?.personas ?? 0) * line.cantidad,
+          (suma, line) => suma + personasConAcceso(line.drink) * line.cantidad,
           0,
         );
         if (accesos > 0) {
@@ -188,11 +195,17 @@ export class PaymentsService {
         }
         if (lines.length === 0) {
           throw new BadRequestException(
-            'Debes comprar al menos una entrada o una botella que incluya acceso',
+            ACCESO_POR_BOTELLA
+              ? 'Debes comprar al menos una entrada o una botella que incluya acceso'
+              : 'Debes comprar al menos una entrada',
           );
         }
 
-        await this.assertCapacity(manager, event, lines);
+        await this.assertCapacity(manager, event, lines, idUser);
+        await manager.getRepository(Reserva).delete({
+          idEvents: event.idEvents,
+          idUser,
+        });
 
         // Se reserva al final, con todo ya validado: el contador queda
         // bloqueado hasta el fin de la transaccion, asi que conviene tenerlo
@@ -304,6 +317,8 @@ export class PaymentsService {
     manager: EntityManager,
     event: Event,
     lines: Pick<PaymentLine, 'cantidad'>[],
+    /** Su propio apartado no le quita cupo a quien compra o reaparta. */
+    idUserPropio?: number,
   ): Promise<void> {
     const row = await manager
       .getRepository(PaymentDetails)
@@ -318,7 +333,13 @@ export class PaymentsService {
       .andWhere('pd.isDeleted = 0')
       .getRawOne<{ vendidas: string | number }>();
 
-    const vendidas = Number(row?.vendidas ?? 0);
+    const apartadas = await manager.getRepository(Reserva).sum('cantidad', {
+      idEvents: event.idEvents,
+      vence: MoreThan(new Date()),
+      ...(idUserPropio ? { idUser: Not(idUserPropio) } : {}),
+    });
+
+    const vendidas = Number(row?.vendidas ?? 0) + Number(apartadas ?? 0);
     const solicitadas = lines.reduce((sum, line) => sum + line.cantidad, 0);
     const disponibles = Math.max(event.capacity - vendidas, 0);
 
@@ -329,6 +350,48 @@ export class PaymentsService {
           : `Solo quedan ${disponibles} entradas para este evento`,
       );
     }
+  }
+
+  /**
+   * Aparta `cantidad` entradas del evento durante RESERVA_MINUTOS, como en el
+   * cine: mientras el cliente paga nadie mas puede quedarse con ese cupo. Con
+   * el evento bloqueado, igual que la compra, dos apartados no se pisan.
+   */
+  async reservar(
+    idEvents: number,
+    idUser: number,
+    cantidad: number,
+  ): Promise<{ vence: Date }> {
+    return this.dataSource.transaction('READ COMMITTED', async (manager) => {
+      const event = await manager.getRepository(Event).findOne({
+        where: { idEvents },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!event) throw new NotFoundException('Evento no encontrado');
+      assertVentaAbierta(event, false);
+      await this.assertCapacity(manager, event, [{ cantidad }], idUser);
+
+      const repo = manager.getRepository(Reserva);
+      await repo.delete({ idEvents, idUser });
+      const vence = new Date(Date.now() + RESERVA_MINUTOS * 60_000);
+      await repo.save(repo.create({ idEvents, idUser, cantidad, vence }));
+      return { vence };
+    });
+  }
+
+  /** Personas con un apartado vigente, por evento: { [idEvents]: n }. */
+  async comprando(): Promise<Record<number, number>> {
+    const filas = await this.dataSource
+      .getRepository(Reserva)
+      .createQueryBuilder('r')
+      .select('r.idEvents', 'idEvents')
+      .addSelect('COUNT(*)', 'personas')
+      .where('r.vence > :ahora', { ahora: new Date() })
+      .groupBy('r.idEvents')
+      .getRawMany<{ idEvents: number; personas: string }>();
+    return Object.fromEntries(
+      filas.map((f) => [f.idEvents, Number(f.personas)]),
+    );
   }
 
   async findOne(id: number): Promise<Payment> {
@@ -401,6 +464,7 @@ export class PaymentsService {
   ): Promise<Payment> {
     const payment = await this.findOne(id);
     const wasApproved = payment.status === PaymentStatus.Aprobado;
+    const wasRejected = payment.status === PaymentStatus.Rechazado;
 
     const updated = await this.dataSource.transaction(
       'READ COMMITTED',
@@ -435,6 +499,25 @@ export class PaymentsService {
       await this.codeService.issueForPayment(updated.idPayment);
     }
 
+    // Al rechazar se avisa al comprador (una vez: solo si antes no lo estaba).
+    const email = updated.idUser?.email;
+    if (!wasRejected && updated.status === PaymentStatus.Rechazado && email) {
+      const [config] = await this.dataSource
+        .getRepository(Configuration)
+        .find({ order: { idConfiguration: 'ASC' }, take: 1 });
+      await this.mailService.sendPaymentRejected({
+        soporteEmail: config?.email || null,
+        soporteTelefono: config?.phone || null,
+        userEmail: email,
+        userName: updated.idUser?.name,
+        eventName: updated.idEvents?.name,
+        noDocumento: updated.noDocumento,
+        total: updated.totalGeneral,
+        referencia: updated.banco === 'Efectivo' ? null : updated.referencia,
+        teniaEntrada: wasApproved,
+      });
+    }
+
     return updated;
   }
 
@@ -447,5 +530,18 @@ export class PaymentsService {
     const payment = await this.findOne(id);
     payment.isDeleted = true;
     await this.paymentsRepository.save(payment);
+  }
+}
+
+/** Lo que dura un apartado; igual que el temporizador del front (20 min). */
+export const RESERVA_MINUTOS = 20;
+
+/** Evento activo y, salvo para el admin, antes de su cierre de venta. */
+function assertVentaAbierta(event: Event, esAdmin: boolean): void {
+  if (event.status !== 1) {
+    throw new BadRequestException('El evento no esta disponible para la venta');
+  }
+  if (!esAdmin && event.cierreVenta && new Date() >= event.cierreVenta) {
+    throw new BadRequestException('La venta de este evento ya cerro');
   }
 }

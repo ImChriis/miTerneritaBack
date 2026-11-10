@@ -19,6 +19,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { join } from 'path';
 import { TicketsModule } from './tickets/tickets.module';
 import { MailModule } from './mail/mail.module';
+import { PostulacionesModule } from './postulaciones/postulaciones.module';
 import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
 import { validateEnv } from './config/env.validation';
 
@@ -64,6 +65,7 @@ import { validateEnv } from './config/env.validation';
     }),
     MailModule,
     TicketsModule,
+    PostulacionesModule,
   ],
   providers: [
     {

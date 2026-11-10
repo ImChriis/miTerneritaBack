@@ -16,6 +16,17 @@ export const productoDisponible = (producto: Food | Drink) =>
   producto.status === PRODUCTO_DISPONIBLE.status &&
   producto.activo === PRODUCTO_DISPONIBLE.activo;
 
+/**
+ * Botellas con acceso General (drinks.personas): apagado por ahora, a pedido
+ * del usuario (2026-11-10). En false las botellas no suman entradas y
+ * `personas` se ignora en el menu, la compra y la correccion del admin.
+ */
+export const ACCESO_POR_BOTELLA = false;
+
+/** Personas a las que da acceso la botella; 0 si no tiene o si esta apagado. */
+export const personasConAcceso = (drink?: Drink | null): number =>
+  ACCESO_POR_BOTELLA ? (drink?.personas ?? 0) : 0;
+
 /** Una tarjeta del menu: lo justo para pintarla y anadirla al carrito. */
 export interface ProductoMenu {
   /**

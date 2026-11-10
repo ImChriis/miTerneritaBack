@@ -99,3 +99,28 @@ export function comprobantePath(filename?: string | null): string | null {
   }
   return join(COMPROBANTES_DIR, filename);
 }
+
+/** CVs de las postulaciones: datos personales, igual de privados. */
+export const CV_DIR = join(process.cwd(), 'uploads', 'cv');
+const MAX_CV_BYTES = 500 * 1024;
+
+export function cvUploadOptions(): MulterOptions {
+  return {
+    storage: diskStorage({
+      destination: CV_DIR,
+      filename: (_req, _file, callback) =>
+        callback(null, `${randomUUID()}.pdf`),
+    }),
+    fileFilter: (_req, file, callback) =>
+      file.mimetype === 'application/pdf'
+        ? callback(null, true)
+        : callback(new BadRequestException('El CV debe ser un PDF'), false),
+    limits: { fileSize: MAX_CV_BYTES, files: 1 },
+  };
+}
+
+/** Ruta en disco de un CV, o null si el valor guardado no es un archivo. */
+export function cvPath(filename?: string | null): string | null {
+  if (!filename || basename(filename) !== filename) return null;
+  return join(CV_DIR, filename);
+}

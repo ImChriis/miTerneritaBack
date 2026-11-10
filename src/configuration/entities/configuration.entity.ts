@@ -24,4 +24,8 @@ export class Configuration {
   /** Fecha de la tasa BCV guardada. */
   @Column({ type: 'datetime', nullable: true })
   fechaBCV: Date | null;
+
+  /** Puestos que acepta el formulario de empleo, separados por coma. */
+  @Column({ length: 255, default: 'Cocina,Bartender' })
+  puestosAbiertos: string;
 }

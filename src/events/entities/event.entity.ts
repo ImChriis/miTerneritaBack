@@ -49,4 +49,8 @@ export class Event {
   /** Una de CATEGORIAS_EVENTO. */
   @Column({ length: 20, default: 'evento' })
   category: string;
+
+  /** Desde este momento no se aparta ni se compra. null = sin cierre. */
+  @Column({ type: 'datetime', nullable: true })
+  cierreVenta: Date | null;
 }

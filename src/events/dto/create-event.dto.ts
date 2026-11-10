@@ -2,6 +2,7 @@ import {
   IsString,
   IsNotEmpty,
   IsOptional,
+  IsDate,
   IsDateString,
   IsIn,
   IsInt,
@@ -91,4 +92,10 @@ export class CreateEventDto {
     message: `category debe ser una de: ${CATEGORIAS_EVENTO.join(', ')}`,
   })
   readonly category?: string;
+
+  /** Fecha y hora (ISO) en que se cierra la venta de entradas. */
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  readonly cierreVenta?: Date;
 }

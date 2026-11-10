@@ -17,6 +17,8 @@ import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity
 import { PaymentMethod } from '../payment-method/entities/paymentMethod.entity';
 import { Configuration } from '../configuration/entities/configuration.entity';
 import { Ticket } from '../tickets/entities/ticket.entity';
+import { Postulacion } from '../postulaciones/entities/postulacion.entity';
+import { Reserva } from '../payments/entities/reserva.entity';
 
 @Module({
   imports: [
@@ -48,6 +50,8 @@ import { Ticket } from '../tickets/entities/ticket.entity';
           PaymentDetails,
           PaymentMethod,
           Configuration,
+          Postulacion,
+          Reserva,
         ],
         synchronize: false, // En producción debe ser false, en dev true si quieres auto crear tablas
         logging: configService.get<string>('NODE_ENV') === 'development',
