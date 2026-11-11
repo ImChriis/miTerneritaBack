@@ -28,4 +28,24 @@ export class Configuration {
   /** Puestos que acepta el formulario de empleo, separados por coma. */
   @Column({ length: 255, default: 'Cocina,Bartender' })
   puestosAbiertos: string;
+
+  // Cuentas que reciben los pagos; las muestra la pantalla de pago.
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  pmBanco: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  pmCedula: string | null;
+
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  pmTelefono: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  zelleTitular: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  zelleTelefono: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  zelleCorreo: string | null;
 }

@@ -1,4 +1,10 @@
-import { IsEmail, IsOptional, IsString, IsNumber } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsNumber,
+  MaxLength,
+} from 'class-validator';
 
 export class UpdateConfigurationDto {
   @IsOptional()
@@ -20,4 +26,34 @@ export class UpdateConfigurationDto {
   @IsOptional()
   @IsNumber()
   readonly BCV?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly pmBanco?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly pmCedula?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly pmTelefono?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly zelleTitular?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly zelleTelefono?: string;
+
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(100)
+  readonly zelleCorreo?: string;
 }
