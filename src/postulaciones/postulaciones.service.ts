@@ -51,6 +51,7 @@ export class PostulacionesService {
   async create(
     dto: CreatePostulacionDto,
     cv?: string,
+    cvData?: Buffer,
   ): Promise<{ message: string }> {
     const { abiertos } = await this.puestos();
     if (!abiertos.includes(dto.puesto)) {
@@ -63,6 +64,7 @@ export class PostulacionesService {
         ...dto,
         mensaje: dto.mensaje || null,
         cv: cv ?? null,
+        cvData: cvData ?? null,
       }),
     );
     // No se devuelve la fila: el formulario es público.
@@ -87,12 +89,19 @@ export class PostulacionesService {
     return this.repo.save(postulacion);
   }
 
-  async cv(id: number): Promise<string> {
-    const path = cvPath((await this.findOne(id)).cv);
+  async cv(id: number): Promise<{ data?: Buffer; path?: string }> {
+    const fila = await this.repo.findOne({
+      where: { idPostulacion: id },
+      select: { idPostulacion: true, cv: true, cvData: true },
+    });
+    if (!fila) throw new NotFoundException('Postulación no encontrada');
+    if (fila.cvData?.length) return { data: fila.cvData };
+    // CVs antiguos: archivo en disco (solo existen en local).
+    const path = cvPath(fila.cv);
     if (!path || !existsSync(path)) {
       throw new NotFoundException('Esta postulación no tiene CV');
     }
-    return path;
+    return { path };
   }
 
   async remove(id: number): Promise<void> {

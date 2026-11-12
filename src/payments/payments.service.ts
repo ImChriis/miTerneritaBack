@@ -83,6 +83,7 @@ export class PaymentsService {
     createPaymentDto: CreatePaymentDto,
     requester: AuthenticatedUser,
     comprobante?: string,
+    comprobanteData?: Buffer,
   ): Promise<Payment> {
     const {
       idUser: requestedUserId,
@@ -250,6 +251,7 @@ export class PaymentsService {
             // Nombre del archivo en la carpeta privada de comprobantes, o
             // vacio en los pagos en efectivo.
             comprobante,
+            comprobanteData: comprobanteData ?? null,
             idUser: user,
             idEvents: event,
             // `date` la rellena MySQL con su DEFAULT current_timestamp().
@@ -467,20 +469,36 @@ export class PaymentsService {
   async getComprobante(
     id: number,
     requester: AuthenticatedUser,
-  ): Promise<{ path: string; mimeType: string; extension: string }> {
+  ): Promise<{
+    data?: Buffer;
+    path?: string;
+    mimeType: string;
+    extension: string;
+  }> {
     const payment = await this.findOneForRequester(
       id,
       requester.userId,
       requester.role,
     );
 
+    const extension = payment.comprobante
+      ? extname(payment.comprobante).toLowerCase()
+      : '';
+    const mimeType = MIME_POR_EXTENSION[extension];
+    // Nuevo: el contenido esta en la BD. Antiguo: el archivo en disco (local).
+    const { comprobanteData } =
+      (await this.paymentsRepository.findOne({
+        where: { idPayment: id },
+        select: { idPayment: true, comprobanteData: true },
+      })) ?? {};
+    if (mimeType && comprobanteData?.length) {
+      return { data: comprobanteData, mimeType, extension };
+    }
     const path = comprobantePath(payment.comprobante);
-    const extension = path ? extname(path).toLowerCase() : '';
-    if (!path || !MIME_POR_EXTENSION[extension] || !existsSync(path)) {
+    if (!mimeType || !path || !existsSync(path)) {
       throw new NotFoundException('Este pago no tiene comprobante adjunto');
     }
-
-    return { path, mimeType: MIME_POR_EXTENSION[extension], extension };
+    return { path, mimeType, extension };
   }
 
   async updateStatus(

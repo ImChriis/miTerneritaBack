@@ -15,8 +15,8 @@ import { basename, join } from 'path';
  */
 export const COMPROBANTES_DIR = join(process.cwd(), 'uploads', 'comprobantes');
 
-const MAX_FILE_SIZE_BYTES =
-  Number(process.env.MAX_UPLOAD_SIZE_MB ?? 15) * 1024 * 1024;
+// Se guardan en la BD: TiDB limita cada fila a ~6 MB, asi que 5 MB como maximo.
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
 /** Formatos admitidos: tipo MIME -> extension con la que se guarda. */
 const FORMATOS: Record<string, string> = {
@@ -123,4 +123,11 @@ export function cvUploadOptions(): MulterOptions {
 export function cvPath(filename?: string | null): string | null {
   if (!filename || basename(filename) !== filename) return null;
   return join(CV_DIR, filename);
+}
+
+/** Lee el archivo subido y lo borra del disco temporal: su contenido va a la BD. */
+export async function leerYBorrar(file: Express.Multer.File): Promise<Buffer> {
+  const data = await fs.readFile(file.path);
+  await fs.rm(file.path, { force: true });
+  return data;
 }

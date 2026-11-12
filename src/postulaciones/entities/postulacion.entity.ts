@@ -53,6 +53,10 @@ export class Postulacion {
   @Column({ type: 'varchar', length: 64, nullable: true })
   cv: string | null;
 
+  /** Contenido del PDF (el disco de Render no persiste). No se carga en listados. */
+  @Column({ type: 'mediumblob', nullable: true, select: false })
+  cvData: Buffer | null;
+
   @Column({ length: 20, default: ESTADOS_POSTULACION[0] })
   estado: string;
 

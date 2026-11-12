@@ -72,6 +72,10 @@ export class Payment {
   @Column({ length: 255, nullable: true })
   comprobante: string;
 
+  /** Contenido del comprobante (el disco de Render no persiste). No se carga en listados. */
+  @Column({ type: 'mediumblob', nullable: true, select: false })
+  comprobanteData: Buffer | null;
+
   @Column({ length: 100, nullable: true })
   banco: string;
 

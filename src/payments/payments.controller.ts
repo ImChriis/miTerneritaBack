@@ -28,6 +28,7 @@ import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-requ
 import {
   assertComprobanteReal,
   comprobanteUploadOptions,
+  leerYBorrar,
 } from '../common/uploads/comprobante-upload';
 
 @Controller('payment')
@@ -51,8 +52,10 @@ export class PaymentsController {
   ) {
     // Un cliente siempre paga por transferencia, pago movil o Zelle: necesita
     // comprobante. Solo el admin registra pagos en efectivo sin el.
+    let comprobanteData: Buffer | undefined;
     if (comprobante) {
       await assertComprobanteReal(comprobante);
+      comprobanteData = await leerYBorrar(comprobante);
     } else if (req.user.role !== 'admin') {
       throw new BadRequestException('Adjunta el comprobante de pago');
     }
@@ -61,6 +64,7 @@ export class PaymentsController {
       createPaymentDto,
       req.user,
       comprobante?.filename,
+      comprobanteData,
     );
   }
 
@@ -105,7 +109,9 @@ export class PaymentsController {
       // Contiene datos bancarios: que no lo guarde ninguna cache intermedia.
       'Cache-Control': 'private, no-store',
     });
-    return new StreamableFile(createReadStream(archivo.path));
+    return archivo.data
+      ? new StreamableFile(archivo.data)
+      : new StreamableFile(createReadStream(archivo.path!));
   }
 
   /**

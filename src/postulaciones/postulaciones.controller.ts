@@ -24,6 +24,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import {
   assertComprobanteReal,
   cvUploadOptions,
+  leerYBorrar,
 } from '../common/uploads/comprobante-upload';
 import { PostulacionesService } from './postulaciones.service';
 import { CreatePostulacionDto } from './dto/create-postulacion.dto';
@@ -47,7 +48,11 @@ export class PostulacionesController {
     @Body() dto: CreatePostulacionDto,
   ) {
     if (cv) await assertComprobanteReal(cv);
-    return this.postulacionesService.create(dto, cv?.filename);
+    return this.postulacionesService.create(
+      dto,
+      cv?.filename,
+      cv ? await leerYBorrar(cv) : undefined,
+    );
   }
 
   /** Público: lista de puestos y los abiertos (el formulario solo muestra estos). */
@@ -77,13 +82,15 @@ export class PostulacionesController {
     @Param('id', ParseIntPipe) id: number,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    const path = await this.postulacionesService.cv(id);
+    const archivo = await this.postulacionesService.cv(id);
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="cv-${id}.pdf"`,
       'Cache-Control': 'private, no-store',
     });
-    return new StreamableFile(createReadStream(path));
+    return archivo.data
+      ? new StreamableFile(archivo.data)
+      : new StreamableFile(createReadStream(archivo.path!));
   }
 
   @Patch(':id/estado')
