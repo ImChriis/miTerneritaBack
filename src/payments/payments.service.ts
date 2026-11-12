@@ -136,6 +136,31 @@ export class PaymentsService {
         }
         assertVentaAbierta(event, requester.role === 'admin');
 
+        // Una referencia no se repite en el mismo banco (si en bancos distintos).
+        // Los pagos rechazados o borrados no cuentan: el cliente puede reenviarla.
+        // shortcut: sin indice unico (MySQL no filtra por estado); dos compras
+        // simultaneas con la misma referencia podrian colarse.
+        const referencia = paymentData.referencia?.trim();
+        if (
+          paymentData.banco &&
+          referencia &&
+          paymentData.banco !== 'Efectivo'
+        ) {
+          const repetida = await manager.getRepository(Payment).exists({
+            where: {
+              banco: paymentData.banco,
+              referencia,
+              isDeleted: false,
+              status: Not(PaymentStatus.Rechazado),
+            },
+          });
+          if (repetida) {
+            throw new ConflictException(
+              `La referencia ${referencia} de ${paymentData.banco} ya fue registrada en otro pago`,
+            );
+          }
+        }
+
         const tickets = ticketIds.length
           ? await manager
               .getRepository(Ticket)
