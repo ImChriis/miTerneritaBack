@@ -56,4 +56,19 @@ export class UpdateConfigurationDto {
   @IsEmail()
   @MaxLength(100)
   readonly zelleCorreo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly trBanco?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly trCuenta?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly trRif?: string;
 }

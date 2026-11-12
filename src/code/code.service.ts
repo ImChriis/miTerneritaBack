@@ -16,6 +16,7 @@ import { ScanLogDetail } from './entities/scan-log-detail.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { PaymentStatus } from '../payments/enums/payment-status.enum';
 import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity';
+import { ConsumeDetails } from '../consumeDetails/entities/consumeDetail.entity';
 import { MailService } from '../mail/mail.service';
 import { sumQuantitiesBy } from '../common/merge-lines';
 import { formatDateOnly } from '../common/format-date';
@@ -70,6 +71,13 @@ export interface EscaneoResumen {
 export interface LookupResult extends EstadoEntrada {
   /** Ultimos escaneos de este QR: "15/15, la ultima a las 22:41 en puerta 2". */
   historial: EscaneoResumen[];
+  /** Para identificar al comprador en puerta. */
+  buyerCedula: string | null;
+  buyerPhone: string | null;
+  /** Total del pago (entradas + consumo), en USD. */
+  montoPagado: number;
+  /** Comida y bebida pre-ordenadas, para entregarlas en barra. */
+  consumo: Array<{ nombre: string; cantidad: number; total: number }>;
 }
 
 export interface RedeemResult extends EstadoEntrada {
@@ -317,9 +325,22 @@ export class CodeService {
     this.asegurarEvento(payment, ctx);
     const details = await this.lineas(manager, payment.idPayment, false);
 
+    const consumo = await manager.getRepository(ConsumeDetails).find({
+      where: { idPayment: { idPayment: payment.idPayment } },
+      relations: ['idFood', 'idDrinks'],
+    });
+
     return {
       ...construirEstado(payment, details),
       historial: await this.historial(manager, payment.idPayment),
+      buyerCedula: payment.idUser?.cedula ?? null,
+      buyerPhone: payment.idUser?.phone ?? null,
+      montoPagado: Number(payment.totalGeneral ?? 0),
+      consumo: consumo.map((c) => ({
+        nombre: c.idFood?.description ?? c.idDrinks?.description ?? 'Producto',
+        cantidad: (c.foodAmount || 0) + (c.drinksAmount || 0),
+        total: Number(c.totalConsume),
+      })),
     };
   }
 

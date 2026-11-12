@@ -48,4 +48,13 @@ export class Configuration {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   zelleCorreo: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  trBanco: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  trCuenta: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  trRif: string | null;
 }
