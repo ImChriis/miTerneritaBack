@@ -214,7 +214,16 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
-    await this.usersRepository.remove(user);
+    try {
+      await this.usersRepository.remove(user);
+    } catch (error: unknown) {
+      // Con pagos o entradas no se puede borrar: se perderian sus facturas.
+      // Se desactiva: el JwtStrategy rechaza status != 1 y la lista lo oculta.
+      if ((error as { code?: string }).code !== 'ER_ROW_IS_REFERENCED_2') {
+        throw error;
+      }
+      await this.usersRepository.update({ id }, { status: 0 });
+    }
   }
 
   // Encontrar todos los usuarios, incluyendo el nombre del rol
@@ -244,7 +253,7 @@ export class UsersService {
   async findAllWithRoleName(): Promise<
     Array<User & { roleName: string | null }>
   > {
-    return this.findUsersWithRoleName();
+    return this.findUsersWithRoleName((qb) => qb.where('user.status = 1'));
   }
 
   async findByIdWithRoleName(
