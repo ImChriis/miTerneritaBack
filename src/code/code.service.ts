@@ -325,10 +325,16 @@ export class CodeService {
     this.asegurarEvento(payment, ctx);
     const details = await this.lineas(manager, payment.idPayment, false);
 
-    const consumo = await manager.getRepository(ConsumeDetails).find({
-      where: { idPayment: { idPayment: payment.idPayment } },
-      relations: ['idFood', 'idDrinks'],
-    });
+    // Join explicito: find({ where: { idPayment: { idPayment } } }) no filtra
+    // bien porque la relacion se llama igual que la columna (ver payment-totals).
+    const consumo = await manager
+      .getRepository(ConsumeDetails)
+      .createQueryBuilder('cd')
+      .innerJoin('cd.idPayment', 'p')
+      .leftJoinAndSelect('cd.idFood', 'f')
+      .leftJoinAndSelect('cd.idDrinks', 'd')
+      .where('p.idPayment = :idPayment', { idPayment: payment.idPayment })
+      .getMany();
 
     return {
       ...construirEstado(payment, details),
