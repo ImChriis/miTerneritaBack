@@ -29,6 +29,20 @@ export class ReservasController {
     );
   }
 
+  /** Público: ids de eventos agotados (SOLD OUT). Sin cantidades. */
+  @Get('agotados')
+  agotados() {
+    return this.paymentsService.agotados();
+  }
+
+  /** Personal: cupo de cada evento (capacidad, vendidas, apartadas). */
+  @Get('disponibles')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'user')
+  disponibles() {
+    return this.paymentsService.disponibilidad();
+  }
+
   /** Público: { [idEvents]: personas comprando ahora }. */
   @Get('comprando')
   comprando() {

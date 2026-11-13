@@ -421,6 +421,154 @@ export class PaymentsService {
     );
   }
 
+  /**
+   * Cupo de cada evento: { [idEvents]: { capacidad, vendidas, apartadas } }.
+   * vendidas = pagos Pendiente y Aprobado (mismo criterio que assertCapacity);
+   * apartadas = apartados vigentes de quien esta pagando.
+   */
+  async disponibilidad(): Promise<
+    Record<number, { capacidad: number; vendidas: number; apartadas: number }>
+  > {
+    const filas = await this.dataSource.query<
+      {
+        idEvents: number;
+        capacity: number;
+        vendidas: string;
+        apartadas: string;
+      }[]
+    >(
+      `SELECT e.idEvents, e.capacity,
+        COALESCE((SELECT SUM(COALESCE(pd.ticketNum, 1)) FROM paymentdetails pd
+          INNER JOIN payment p ON p.idPayment = pd.idPayment
+          WHERE p.idEvents = e.idEvents AND p.status IN (?, ?)
+            AND p.isDeleted = 0 AND pd.isDeleted = 0), 0) AS vendidas,
+        COALESCE((SELECT SUM(r.cantidad) FROM reserva r
+          WHERE r.idEvents = e.idEvents AND r.vence > ?), 0) AS apartadas
+      FROM events e`,
+      [PaymentStatus.Pendiente, PaymentStatus.Aprobado, new Date()],
+    );
+    return Object.fromEntries(
+      filas.map((f) => [
+        f.idEvents,
+        {
+          capacidad: Number(f.capacity ?? 0),
+          vendidas: Number(f.vendidas),
+          apartadas: Number(f.apartadas),
+        },
+      ]),
+    );
+  }
+
+  /** Eventos sin cupo (lo vendido ya llena el aforo): para mostrar SOLD OUT. */
+  async agotados(): Promise<number[]> {
+    const cupos = await this.disponibilidad();
+    return Object.entries(cupos)
+      .filter(([, c]) => c.capacidad > 0 && c.vendidas >= c.capacidad)
+      .map(([id]) => Number(id));
+  }
+
+  /**
+   * Reporte de ventas de un evento: lo cobrado (pagos Aprobados) en entradas
+   * por tipo y en consumo por producto, mas el conteo de pagos por estado.
+   */
+  async reporte(idEvents: number) {
+    const evento = await this.dataSource
+      .getRepository(Event)
+      .findOne({ where: { idEvents } });
+    if (!evento) throw new NotFoundException('Evento no encontrado');
+
+    const aprobado = PaymentStatus.Aprobado;
+    // Las entradas que regala una botella con acceso van en su propia linea.
+    const entradas = await this.dataSource.query<
+      { nombre: string; cantidad: string; total: string }[]
+    >(
+      `SELECT IF(pd.precio = 0, CONCAT(t.name, ' (incluida con botella)'), t.name) AS nombre,
+        SUM(COALESCE(pd.ticketNum, 1)) AS cantidad, SUM(pd.total) AS total
+      FROM paymentdetails pd
+      INNER JOIN payment p ON p.idPayment = pd.idPayment
+      INNER JOIN ticket t ON t.idTicket = pd.idTicket
+      WHERE p.idEvents = ? AND p.status = ? AND p.isDeleted = 0 AND pd.isDeleted = 0
+      GROUP BY nombre
+      ORDER BY total DESC`,
+      [idEvents, aprobado],
+    );
+    const consumo = await this.dataSource.query<
+      {
+        nombre: string;
+        tipo: string;
+        botella: number;
+        cantidad: string;
+        total: string;
+      }[]
+    >(
+      `SELECT f.description AS nombre, 'Comida' AS tipo, 0 AS botella, SUM(cd.foodAmount) AS cantidad, SUM(cd.totalConsume) AS total
+      FROM consumedetails cd
+      INNER JOIN payment p ON p.idPayment = cd.idPayment
+      INNER JOIN food f ON f.idFood = cd.idFood
+      WHERE p.idEvents = ? AND p.status = ? AND p.isDeleted = 0
+      GROUP BY f.idFood, f.description
+      UNION ALL
+      SELECT d.description, 'Bebida', MAX(d.detalle LIKE '%0,75%'), SUM(cd.drinksAmount), SUM(cd.totalConsume)
+      FROM consumedetails cd
+      INNER JOIN payment p ON p.idPayment = cd.idPayment
+      INNER JOIN drinks d ON d.idDrinks = cd.idDrinks
+      WHERE p.idEvents = ? AND p.status = ? AND p.isDeleted = 0
+      GROUP BY d.idDrinks, d.description
+      ORDER BY total DESC`,
+      [idEvents, aprobado, idEvents, aprobado],
+    );
+    const pagos = await this.dataSource.query<
+      { status: string; cantidad: string; total: string }[]
+    >(
+      `SELECT status, COUNT(*) AS cantidad, COALESCE(SUM(totalGeneral), 0) AS total
+      FROM payment WHERE idEvents = ? AND isDeleted = 0 GROUP BY status`,
+      [idEvents],
+    );
+
+    const num = (v: unknown) => Number(v ?? 0);
+    const lineasEntradas = entradas.map((e) => ({
+      nombre: e.nombre,
+      cantidad: num(e.cantidad),
+      total: num(e.total),
+    }));
+    const lineasConsumo = consumo.map((c) => ({
+      nombre: c.nombre,
+      tipo: c.tipo,
+      // Bebidas de 0,75 L: el reporte las cuenta en botellas.
+      botella: Number(c.botella) === 1,
+      cantidad: num(c.cantidad),
+      total: num(c.total),
+    }));
+    const suma = (l: { total: number }[]) =>
+      fromCents(l.reduce((s, x) => s + toCents(x.total), 0));
+    const cupo = (await this.disponibilidad())[idEvents];
+
+    return {
+      evento: {
+        idEvents: evento.idEvents,
+        nombre: evento.name,
+        fecha: evento.date,
+        hora: evento.time,
+        salon: evento.room,
+        categoria: evento.category,
+        capacidad: evento.capacity,
+        vendidas: cupo?.vendidas ?? 0,
+      },
+      entradas: lineasEntradas,
+      consumo: lineasConsumo,
+      pagos: pagos.map((p) => ({
+        estado: p.status,
+        cantidad: num(p.cantidad),
+        total: num(p.total),
+      })),
+      totales: {
+        entradas: suma(lineasEntradas),
+        consumo: suma(lineasConsumo),
+        general: suma([...lineasEntradas, ...lineasConsumo]),
+      },
+    };
+  }
+
   async findOne(id: number): Promise<Payment> {
     const payment = await this.paymentsRepository.findOne({
       where: { idPayment: id, isDeleted: false },

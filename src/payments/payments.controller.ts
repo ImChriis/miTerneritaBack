@@ -42,6 +42,13 @@ export class PaymentsController {
    * asi que una peticion sin token no llega a escribir nada en disco. Si la
    * compra falla despues, el filtro global borra el archivo.
    */
+  /** Reporte de ventas del evento (entradas y consumo cobrados). */
+  @Get('reporte/:idEvents')
+  @Roles('admin')
+  reporte(@Param('idEvents', ParseIntPipe) idEvents: number) {
+    return this.paymentsService.reporte(idEvents);
+  }
+
   @Post()
   @Roles('admin', 'client')
   @UseInterceptors(FileInterceptor('comprobante', comprobanteUploadOptions()))
