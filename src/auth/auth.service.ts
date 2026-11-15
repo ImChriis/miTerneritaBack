@@ -12,8 +12,14 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
+/** Fallos permitidos con un codigo de recuperacion antes de invalidarlo. */
+const MAX_INTENTOS_RESET = 5;
+
 @Injectable()
 export class AuthService {
+  /** Fallos de reset por email (ver resetPassword). */
+  private readonly fallosReset = new Map<string, number>();
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -96,6 +102,7 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await this.usersService.setResetToken(user.id!, hashedToken, expiresAt);
+    this.fallosReset.delete(user.email!.toLowerCase());
 
     try {
       await this.mailerService.sendMail({
@@ -123,18 +130,30 @@ export class AuthService {
    * y envía su nueva contraseña.
    */
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const email = resetPasswordDto.email.trim().toLowerCase();
     const hashedToken = crypto
       .createHash('sha256')
       .update(resetPasswordDto.code)
       .digest('hex');
 
-    const user = await this.usersService.findByResetToken(hashedToken);
+    const user = await this.usersService.findByResetToken(email, hashedToken);
 
     if (
       !user ||
       !user.resetPasswordExpires ||
       user.resetPasswordExpires < new Date()
     ) {
+      // Un codigo de 6 digitos se adivina probando: tras MAX_INTENTOS_RESET
+      // fallos se invalida y hay que pedir otro.
+      // shortcut: contador en memoria (una sola instancia en Render); con
+      // varias instancias, guardarlo en la BD o en Redis.
+      const fallos = (this.fallosReset.get(email) ?? 0) + 1;
+      if (fallos >= MAX_INTENTOS_RESET) {
+        this.fallosReset.delete(email);
+        await this.usersService.clearResetTokenByEmail(email);
+      } else {
+        this.fallosReset.set(email, fallos);
+      }
       throw new BadRequestException(
         'El código es inválido o ha expirado. Solicita uno nuevo.',
       );
@@ -145,6 +164,7 @@ export class AuthService {
       user.id!,
       hashedPassword,
     );
+    this.fallosReset.delete(email);
 
     return { message: 'Tu contraseña ha sido actualizada correctamente.' };
   }

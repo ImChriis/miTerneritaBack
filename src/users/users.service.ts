@@ -272,14 +272,23 @@ export class UsersService {
     });
   }
 
-  async findByResetToken(hashedToken: string) {
+  async findByResetToken(email: string, hashedToken: string) {
     // resetPasswordExpires es select: false, hay que pedirla explicitamente
     // porque resetPassword() necesita comprobar la caducidad.
     return this.usersRepository
       .createQueryBuilder('user')
       .addSelect(['user.resetPasswordToken', 'user.resetPasswordExpires'])
-      .where('user.resetPasswordToken = :hashedToken', { hashedToken })
+      .where('user.email = :email', { email })
+      .andWhere('user.resetPasswordToken = :hashedToken', { hashedToken })
       .getOne();
+  }
+
+  /** Invalida el codigo de recuperacion pendiente de una cuenta. */
+  async clearResetTokenByEmail(email: string) {
+    return this.usersRepository.update(
+      { email },
+      { resetPasswordToken: null, resetPasswordExpires: null },
+    );
   }
 
   async updatePasswordAndClearToken(userId: number, hashedPassword: string) {

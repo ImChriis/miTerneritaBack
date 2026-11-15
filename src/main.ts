@@ -13,6 +13,9 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.disable('x-powered-by');
+  // Render pone un proxy delante: sin esto req.ip es la IP del proxy y todos los
+  // clientes comparten el mismo limite de peticiones (uno solo podia bloquear a todos).
+  app.set('trust proxy', 1);
 
   app.useGlobalPipes(
     new ValidationPipe({

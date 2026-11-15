@@ -259,7 +259,7 @@ export class CodeService {
    * Es idempotente: si el pago ya tiene entrada se reutiliza, para que
    * reaprobar un pago no invalide el QR que el comprador ya recibio.
    */
-  async issueForPayment(idPayment: number): Promise<Code> {
+  async issueForPayment(idPayment: number, reenviar = false): Promise<Code> {
     const payment = await this.paymentsRepository.findOne({
       where: { idPayment, isDeleted: false },
       relations: ['idUser', 'idEvents'],
@@ -267,22 +267,33 @@ export class CodeService {
     if (!payment) {
       throw new NotFoundException('Pago no encontrado');
     }
+    // Solo un pago aprobado tiene entrada: antes el reenvio emitia QR de
+    // pagos pendientes.
+    if (payment.status !== PaymentStatus.Aprobado) {
+      throw new ConflictException('El pago no esta aprobado');
+    }
 
     const existing = await this.codeRepository.findOne({
       where: { payment: { idPayment } },
       relations: ['payment'],
     });
-    if (existing) {
+    // Reaprobar no genera ni reenvia nada; "reenviar" manda el mismo QR (antes
+    // devolvia aqui sin enviar el correo).
+    if (existing && !reenviar) {
       return existing;
     }
 
     // Token opaco: no lleva ningun dato del comprador ni del evento, asi que
     // fotografiar el QR de otra persona no revela nada.
-    const token = crypto.randomBytes(24).toString('hex');
-
-    const code = await this.codeRepository.save(
-      this.codeRepository.create({ QR: token, payment }),
-    );
+    const code =
+      existing ??
+      (await this.codeRepository.save(
+        this.codeRepository.create({
+          QR: crypto.randomBytes(24).toString('hex'),
+          payment,
+        }),
+      ));
+    const token = code.QR;
 
     const email = payment.idUser?.email;
     if (email) {

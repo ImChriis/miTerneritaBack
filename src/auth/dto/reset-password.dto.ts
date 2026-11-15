@@ -1,6 +1,16 @@
-import { IsString, Length, MinLength, MaxLength } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  Length,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 
 export class ResetPasswordDto {
+  /** El codigo solo vale para la cuenta a la que se envio. */
+  @IsEmail()
+  readonly email: string;
+
   @IsString()
   @Length(6, 6, { message: 'El código debe tener 6 dígitos.' })
   readonly code: string;

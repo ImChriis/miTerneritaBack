@@ -227,6 +227,9 @@ export class PaymentsService {
           );
         }
 
+        if (requester.role !== 'admin') {
+          await this.assertTopeCliente(manager, event, idUser, lines);
+        }
         await this.assertCapacity(manager, event, lines, idUser);
         await manager.getRepository(Reserva).delete({
           idEvents: event.idEvents,
@@ -375,6 +378,42 @@ export class PaymentsService {
         disponibles === 0
           ? 'No quedan entradas para este evento'
           : `Solo quedan ${disponibles} entradas para este evento`,
+      );
+    }
+  }
+
+  /**
+   * Un cliente no puede tener mas de MAX_ENTRADAS_CLIENTE entradas en un
+   * evento sumando sus pagos Pendiente y Aprobado. Sin esto, un pago Pendiente
+   * de 300 entradas con un comprobante cualquiera dejaba el evento en SOLD OUT
+   * hasta que un admin lo rechazara. El admin (ventas en efectivo) no tiene tope.
+   */
+  private async assertTopeCliente(
+    manager: EntityManager,
+    event: Event,
+    idUser: number,
+    lines: Pick<PaymentLine, 'cantidad'>[],
+  ): Promise<void> {
+    const row = await manager
+      .getRepository(PaymentDetails)
+      .createQueryBuilder('pd')
+      .innerJoin('pd.payment', 'p')
+      .select('COALESCE(SUM(COALESCE(pd.ticketNum, 1)), 0)', 'suyas')
+      .where('p.idEvents = :idEvents', { idEvents: event.idEvents })
+      .andWhere('p.idUser = :idUser', { idUser })
+      .andWhere('p.status IN (:...estados)', {
+        estados: [PaymentStatus.Pendiente, PaymentStatus.Aprobado],
+      })
+      .andWhere('p.isDeleted = 0')
+      .andWhere('pd.isDeleted = 0')
+      .getRawOne<{ suyas: string | number }>();
+    const suyas = Number(row?.suyas ?? 0);
+    const solicitadas = lines.reduce((s, l) => s + l.cantidad, 0);
+    if (suyas + solicitadas > MAX_ENTRADAS_CLIENTE) {
+      throw new ConflictException(
+        suyas > 0
+          ? `Maximo ${MAX_ENTRADAS_CLIENTE} entradas por persona en este evento (ya tienes ${suyas})`
+          : `Maximo ${MAX_ENTRADAS_CLIENTE} entradas por compra`,
       );
     }
   }
@@ -654,17 +693,26 @@ export class PaymentsService {
     updateStatusDto: UpdatePaymentStatusDto,
   ): Promise<Payment> {
     const payment = await this.findOne(id);
-    const wasApproved = payment.status === PaymentStatus.Aprobado;
-    const wasRejected = payment.status === PaymentStatus.Rechazado;
 
-    const updated = await this.dataSource.transaction(
+    // El estado anterior se lee con la fila del pago bloqueada: si dos admins
+    // aprueban a la vez, el segundo ve "Aprobado" y no emite otro QR ni otro
+    // correo. Se actualiza solo `status` (no save del pago entero) para no
+    // pisar el total que recalcula una correccion de consumo concurrente.
+    const antes = await this.dataSource.transaction(
       'READ COMMITTED',
       async (manager) => {
+        const actual = await manager.getRepository(Payment).findOne({
+          where: { idPayment: id, isDeleted: false },
+          select: { idPayment: true, status: true },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (!actual) throw new NotFoundException('Pago no encontrado');
+
         // Un pago Rechazado libero su cupo. Si se reactiva (Pendiente o
         // Aprobado) vuelve a ocupar aforo: antes no se revisaba y se podia
         // vender por encima de la capacidad del evento.
         if (
-          payment.status === PaymentStatus.Rechazado &&
+          actual.status === PaymentStatus.Rechazado &&
           updateStatusDto.status !== PaymentStatus.Rechazado
         ) {
           const event = await manager.getRepository(Event).findOneOrFail({
@@ -679,10 +727,16 @@ export class PaymentsService {
               .map((d) => ({ cantidad: d.ticketNum ?? 1 })),
           );
         }
-        payment.status = updateStatusDto.status;
-        return manager.getRepository(Payment).save(payment);
+        await manager
+          .getRepository(Payment)
+          .update(id, { status: updateStatusDto.status });
+        return actual.status;
       },
     );
+    const wasApproved = antes === PaymentStatus.Aprobado;
+    const wasRejected = antes === PaymentStatus.Rechazado;
+    payment.status = updateStatusDto.status;
+    const updated = payment;
 
     // Al aprobar se emite la entrada y se envia por correo. issueForPayment es
     // idempotente, asi que reaprobar no invalida el QR ya enviado.
@@ -726,6 +780,8 @@ export class PaymentsService {
 
 /** Lo que dura un apartado; igual que el temporizador del front (20 min). */
 export const RESERVA_MINUTOS = 20;
+/** Entradas por cliente y evento (mismo maximo que el apartado del front). */
+export const MAX_ENTRADAS_CLIENTE = 10;
 
 /** Evento activo y, salvo para el admin, antes de su cierre de venta. */
 function assertVentaAbierta(event: Event, esAdmin: boolean): void {

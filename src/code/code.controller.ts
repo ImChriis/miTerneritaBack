@@ -117,7 +117,7 @@ export class CodeController {
   @Post('payment/:idPayment/resend')
   @Roles('admin')
   async resend(@Param('idPayment', ParseIntPipe) idPayment: number) {
-    await this.codeService.issueForPayment(idPayment);
+    await this.codeService.issueForPayment(idPayment, true);
     return { message: 'Entrada enviada correctamente' };
   }
 }
