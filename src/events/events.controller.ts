@@ -121,7 +121,7 @@ export class EventsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'user')
+  @Roles('admin')
   @UseInterceptors(
     FileFieldsInterceptor(
       [

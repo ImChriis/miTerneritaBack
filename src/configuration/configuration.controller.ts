@@ -21,7 +21,7 @@ export class ConfigurationController {
   /** Boton "actualizar tasa" del dashboard: pide la tasa BCV ya, sin esperar al cron. */
   @Post('tasa-bcv')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'user')
+  @Roles('admin')
   async refrescarTasa() {
     await this.tasaBcvService.actualizar(true);
     return this.configurationService.getConfiguration();

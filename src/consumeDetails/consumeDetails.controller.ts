@@ -34,7 +34,7 @@ export class ConsumeDetailsController {
   }
 
   @Get('payment/:idPayment')
-  @Roles('admin', 'client')
+  @Roles('admin', 'client', 'user')
   async findByPayment(
     @Param('idPayment', ParseIntPipe) idPayment: number,
     @Request() req: AuthenticatedRequest,

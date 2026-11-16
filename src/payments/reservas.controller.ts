@@ -20,7 +20,7 @@ export class ReservasController {
   /** Aparta las entradas mientras el cliente paga; reemplaza su apartado anterior. */
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'client')
+  @Roles('admin', 'client', 'user')
   reservar(@Body() dto: ReservarDto, @Request() req: AuthenticatedRequest) {
     return this.paymentsService.reservar(
       dto.idEvents,
@@ -36,10 +36,10 @@ export class ReservasController {
     return this.paymentsService.agotados();
   }
 
-  /** Personal: cupo de cada evento (capacidad, vendidas, apartadas). */
+  /** Admin: cupo de cada evento (capacidad, vendidas, apartadas). */
   @Get('disponibles')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'user')
+  @Roles('admin')
   disponibles() {
     return this.paymentsService.disponibilidad();
   }

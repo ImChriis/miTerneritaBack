@@ -50,7 +50,7 @@ export class PaymentsController {
   }
 
   @Post()
-  @Roles('admin', 'client')
+  @Roles('admin', 'client', 'user')
   @UseInterceptors(FileInterceptor('comprobante', comprobanteUploadOptions()))
   async create(
     @UploadedFile() comprobante: Express.Multer.File | undefined,
@@ -82,7 +82,7 @@ export class PaymentsController {
   }
 
   @Get(':id')
-  @Roles('admin', 'client')
+  @Roles('admin', 'client', 'user')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
@@ -103,7 +103,7 @@ export class PaymentsController {
    * cabecera Authorization, y mostrarla con URL.createObjectURL().
    */
   @Get(':id/comprobante')
-  @Roles('admin', 'client')
+  @Roles('admin', 'client', 'user')
   async getComprobante(
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthenticatedRequest,
