@@ -16,6 +16,7 @@ import {
 } from 'typeorm';
 import { Payment } from './entities/payment.entity';
 import { Reserva } from './entities/reserva.entity';
+import { SalonService } from '../salon/salon.service';
 import { User } from '../users/entities/user.entity';
 import { Event } from '../events/entities/event.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -71,6 +72,8 @@ export class PaymentsService {
     private readonly consumeDetailsService: ConsumeDetailsService,
 
     private readonly dataSource: DataSource,
+
+    private readonly salonService: SalonService,
   ) {}
 
   /**
@@ -90,6 +93,7 @@ export class PaymentsService {
       idEvents,
       items: itemsRecibidos,
       consumos,
+      asientos,
       ...paymentData
     } = createPaymentDto;
 
@@ -231,6 +235,23 @@ export class PaymentsService {
           await this.assertTopeCliente(manager, event, idUser, lines);
         }
         await this.assertCapacity(manager, event, lines, idUser);
+        // El admin vende en taquilla sin mapa: se le asignan puestos libres.
+        const puestos =
+          requester.role === 'admin' && !asientos?.length
+            ? await this.salonService.asignarLibres(
+                manager,
+                event.idEvents,
+                idUser,
+                lines,
+              )
+            : (asientos ?? []);
+        await this.salonService.validarCompra(
+          manager,
+          event.idEvents,
+          idUser,
+          puestos,
+          lines,
+        );
         await manager.getRepository(Reserva).delete({
           idEvents: event.idEvents,
           idUser,
@@ -261,6 +282,14 @@ export class PaymentsService {
             status: PaymentStatus.Pendiente,
             isDeleted: false,
           }),
+        );
+
+        await this.salonService.marcarVendidos(
+          manager,
+          event.idEvents,
+          idUser,
+          puestos,
+          payment.idPayment,
         );
 
         await this.paymentDetailsService.createForPayment(
@@ -427,7 +456,11 @@ export class PaymentsService {
     idEvents: number,
     idUser: number,
     cantidad: number,
+    asientos: string[] = [],
   ): Promise<{ vence: Date }> {
+    if (asientos.length > cantidad) {
+      throw new BadRequestException('Hay mas puestos elegidos que entradas');
+    }
     return this.dataSource.transaction('READ COMMITTED', async (manager) => {
       const event = await manager.getRepository(Event).findOne({
         where: { idEvents },
@@ -441,6 +474,14 @@ export class PaymentsService {
       await repo.delete({ idEvents, idUser });
       const vence = new Date(Date.now() + RESERVA_MINUTOS * 60_000);
       await repo.save(repo.create({ idEvents, idUser, cantidad, vence }));
+      // Los puestos del mapa quedan apartados lo mismo que el cupo.
+      await this.salonService.apartar(
+        manager,
+        idEvents,
+        idUser,
+        asientos,
+        vence,
+      );
       return { vence };
     });
   }
@@ -727,9 +768,17 @@ export class PaymentsService {
               .map((d) => ({ cantidad: d.ticketNum ?? 1 })),
           );
         }
-        await manager
-          .getRepository(Payment)
-          .update(id, { status: updateStatusDto.status });
+        // La primera revision (sale de Pendiente) cierra la espera del cliente.
+        const revisa =
+          actual.status === PaymentStatus.Pendiente &&
+          updateStatusDto.status !== PaymentStatus.Pendiente;
+        await manager.getRepository(Payment).update(id, {
+          status: updateStatusDto.status,
+          ...(revisa ? { revisado: new Date() } : {}),
+        });
+        if (updateStatusDto.status === PaymentStatus.Rechazado) {
+          await this.salonService.liberar(manager, id);
+        }
         return actual.status;
       },
     );
@@ -775,6 +824,7 @@ export class PaymentsService {
     const payment = await this.findOne(id);
     payment.isDeleted = true;
     await this.paymentsRepository.save(payment);
+    await this.salonService.liberar(this.dataSource.manager, id);
   }
 }
 

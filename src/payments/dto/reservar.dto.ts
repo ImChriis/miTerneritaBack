@@ -1,5 +1,14 @@
 import { Type } from 'class-transformer';
-import { IsInt, Max, Min } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayUnique,
+  IsArray,
+  IsInt,
+  IsOptional,
+  Matches,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class ReservarDto {
   @IsInt()
@@ -13,4 +22,12 @@ export class ReservarDto {
   @Max(10)
   @Type(() => Number)
   readonly cantidad: number;
+
+  /** Puestos elegidos en el mapa del salon ("5A", "31H"), si el evento tiene mesas. */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ArrayUnique()
+  @Matches(/^\d{1,2}[A-H]$/, { each: true, message: 'Puesto no valido' })
+  readonly asientos?: string[];
 }

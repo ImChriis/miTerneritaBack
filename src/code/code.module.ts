@@ -1,3 +1,4 @@
+import { SalonModule } from '../salon/salon.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Code } from './entities/code.entity';
@@ -21,6 +22,7 @@ import { MailModule } from '../mail/mail.module';
       PaymentDetails,
     ]),
     MailModule,
+    SalonModule,
   ],
   providers: [CodeService],
   controllers: [CodeController],

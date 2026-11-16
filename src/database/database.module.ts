@@ -19,6 +19,10 @@ import { Configuration } from '../configuration/entities/configuration.entity';
 import { Ticket } from '../tickets/entities/ticket.entity';
 import { Postulacion } from '../postulaciones/entities/postulacion.entity';
 import { Reserva } from '../payments/entities/reserva.entity';
+import { Asiento } from '../salon/entities/asiento.entity';
+import { MesaZona } from '../salon/entities/mesa-zona.entity';
+import { Visita } from '../visitas/entities/visita.entity';
+import { VisitaPaso } from '../visitas/entities/visita-paso.entity';
 
 @Module({
   imports: [
@@ -52,6 +56,10 @@ import { Reserva } from '../payments/entities/reserva.entity';
           Configuration,
           Postulacion,
           Reserva,
+          Asiento,
+          MesaZona,
+          Visita,
+          VisitaPaso,
         ],
         synchronize: false, // En producción debe ser false, en dev true si quieres auto crear tablas
         logging: configService.get<string>('NODE_ENV') === 'development',

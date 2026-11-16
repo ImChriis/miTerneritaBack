@@ -1,6 +1,9 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayUnique,
   IsArray,
+  Matches,
   IsInt,
   IsISO8601,
   IsNumber,
@@ -122,6 +125,25 @@ export class CreatePaymentDto {
   @IsOptional()
   @IsISO8601()
   readonly fechaTransferencia?: string;
+
+  /**
+   * Puestos del mapa del salon ("5A"), uno por cada entrada de una zona con
+   * mesas. En form-data llega como texto JSON: ["5A","5B"].
+   */
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (typeof value !== 'string') return value;
+    try {
+      return JSON.parse(value) as unknown;
+    } catch {
+      return value;
+    }
+  })
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ArrayUnique()
+  @Matches(/^\d{1,2}[A-H]$/, { each: true, message: 'Puesto no valido' })
+  readonly asientos?: string[];
 
   /**
    * Las entradas que se compran. Puede ir vacio si en `consumos` hay una

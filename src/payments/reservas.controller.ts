@@ -26,6 +26,7 @@ export class ReservasController {
       dto.idEvents,
       req.user.userId,
       dto.cantidad,
+      dto.asientos ?? [],
     );
   }
 

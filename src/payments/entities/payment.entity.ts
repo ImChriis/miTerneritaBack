@@ -95,6 +95,10 @@ export class Payment {
   })
   status: PaymentStatus;
 
+  /** Cuando el admin aprobo o rechazo el pago pendiente (espera del cliente). */
+  @Column({ type: 'datetime', nullable: true })
+  revisado: Date | null;
+
   @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 

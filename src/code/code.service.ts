@@ -17,6 +17,7 @@ import { Payment } from '../payments/entities/payment.entity';
 import { PaymentStatus } from '../payments/enums/payment-status.enum';
 import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity';
 import { ConsumeDetails } from '../consumeDetails/entities/consumeDetail.entity';
+import { SalonService } from '../salon/salon.service';
 import { MailService } from '../mail/mail.service';
 import { sumQuantitiesBy } from '../common/merge-lines';
 import { formatDateOnly } from '../common/format-date';
@@ -78,6 +79,8 @@ export interface LookupResult extends EstadoEntrada {
   montoPagado: number;
   /** Comida y bebida pre-ordenadas, para entregarlas en barra. */
   consumo: Array<{ nombre: string; cantidad: number; total: number }>;
+  /** Puestos del mapa del salon ("5A"), si la compra tiene mesa. */
+  asientos: string[];
 }
 
 export interface RedeemResult extends EstadoEntrada {
@@ -251,6 +254,8 @@ export class CodeService {
     private readonly mailService: MailService,
 
     private readonly dataSource: DataSource,
+
+    private readonly salonService: SalonService,
   ) {}
 
   /**
@@ -353,6 +358,7 @@ export class CodeService {
       buyerCedula: payment.idUser?.cedula ?? null,
       buyerPhone: payment.idUser?.phone ?? null,
       montoPagado: Number(payment.totalGeneral ?? 0),
+      asientos: await this.salonService.dePago(payment.idPayment),
       consumo: consumo.map((c) => ({
         nombre: c.idFood?.description ?? c.idDrinks?.description ?? 'Producto',
         cantidad: (c.foodAmount || 0) + (c.drinksAmount || 0),

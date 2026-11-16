@@ -11,6 +11,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PaymentDetailsModule } from '../payment-details/payment-details.module';
 import { CodeModule } from '../code/code.module';
 import { MailModule } from '../mail/mail.module';
+import { SalonModule } from '../salon/salon.module';
 import { Reserva } from './entities/reserva.entity';
 import { ReservasController } from './reservas.controller';
 
@@ -26,6 +27,7 @@ import { ReservasController } from './reservas.controller';
     PaymentDetailsModule,
     CodeModule,
     MailModule,
+    SalonModule,
     MailerModule,
     ConfigModule,
   ],
