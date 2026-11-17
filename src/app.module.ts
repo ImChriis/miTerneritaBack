@@ -15,6 +15,8 @@ import { ConfigurationModule } from './configuration/configuration.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { R2_ACTIVO } from './common/uploads/r2';
+import { ImagenesController } from './common/uploads/imagenes.controller';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TicketsModule } from './tickets/tickets.module';
 import { MailModule } from './mail/mail.module';
@@ -44,7 +46,12 @@ import { REPO_IMAGES_DIR, UPLOADS_DIR } from './common/uploads/webp-upload';
         serveRoot: '/assets/img',
         exclude: ['/assets/img/{*any}'],
       },
-      { rootPath: REPO_IMAGES_DIR, serveRoot: '/assets/img' },
+      {
+        rootPath: REPO_IMAGES_DIR,
+        serveRoot: '/assets/img',
+        // Con R2, lo que no esta en disco lo redirige ImagenesController al bucket.
+        ...(R2_ACTIVO && { exclude: ['/assets/img/{*any}'] }),
+      },
     ),
     // Tareas programadas (tasa BCV).
     ScheduleModule.forRoot(),
@@ -78,6 +85,7 @@ import { REPO_IMAGES_DIR, UPLOADS_DIR } from './common/uploads/webp-upload';
     SalonModule,
     VisitasModule,
   ],
+  controllers: [ImagenesController],
   providers: [
     {
       provide: APP_GUARD,

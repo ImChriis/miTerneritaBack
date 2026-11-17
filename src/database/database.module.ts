@@ -64,8 +64,12 @@ import { VisitaPaso } from '../visitas/entities/visita-paso.entity';
         synchronize: false, // En producción debe ser false, en dev true si quieres auto crear tablas
         logging: configService.get<string>('NODE_ENV') === 'development',
 
-        // TiDB Cloud exige SSL; MariaDB local no. DATABASE_SSL=true lo activa.
-        ...(configService.get<string>('DATABASE_SSL') === 'true' && {
+        // TiDB Cloud exige SSL; MariaDB local no. Se activa solo con un host de
+        // TiDB Cloud o con DATABASE_SSL=true.
+        ...((configService.get<string>('DATABASE_SSL') === 'true' ||
+          /tidbcloud\.com$/i.test(
+            configService.get<string>('DATABASE_HOST') ?? '',
+          )) && {
           ssl: { rejectUnauthorized: true },
           extra: { ssl: { rejectUnauthorized: true } },
         }),

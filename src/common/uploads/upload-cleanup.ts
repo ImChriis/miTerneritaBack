@@ -1,8 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { promises as fs } from 'fs';
 import { basename, join } from 'path';
-import { UPLOADS_DIR } from './webp-upload';
+import { borrarImagen, UPLOADS_DIR } from './webp-upload';
 import { Food } from '../../food/entities/food.entity';
 import { Drink } from '../../drinks/entities/drink.entity';
 import { Event } from '../../events/entities/event.entity';
@@ -42,7 +41,7 @@ export async function discardUploadedFiles(
     files
       .filter((file) => file?.path)
       .map((file) =>
-        fs.unlink(file.path).catch((error: NodeJS.ErrnoException) => {
+        borrarImagen(file.path).catch((error: NodeJS.ErrnoException) => {
           if (error.code !== 'ENOENT') {
             logger.warn(`No se pudo borrar ${file.path}: ${error.message}`);
           }
@@ -83,11 +82,11 @@ export async function removeImageIfUnused(
     return;
   }
 
-  await fs
-    .unlink(join(UPLOADS_DIR, filename))
-    .catch((error: NodeJS.ErrnoException) => {
+  await borrarImagen(join(UPLOADS_DIR, filename)).catch(
+    (error: NodeJS.ErrnoException) => {
       if (error.code !== 'ENOENT') {
         logger.warn(`No se pudo borrar ${filename}: ${error.message}`);
       }
-    });
+    },
+  );
 }

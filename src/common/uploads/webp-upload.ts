@@ -4,7 +4,8 @@ import { StorageEngine } from 'multer';
 import sharp from 'sharp';
 import { existsSync, mkdirSync, promises as fs } from 'fs';
 import { randomUUID } from 'crypto';
-import { basename, extname, join, resolve } from 'path';
+import { basename, extname, join, relative, resolve, sep } from 'path';
+import { borrarR2, R2_ACTIVO, subirR2 } from './r2';
 
 /**
  * Configuracion compartida para las subidas de imagenes publicas (eventos,
@@ -75,6 +76,23 @@ export async function imagenAWebp(data: Buffer): Promise<Buffer> {
   }
 }
 
+/** Clave en R2 de una ruta dentro de UPLOADS_DIR; null si esta fuera. */
+const claveR2 = (path: string) => {
+  const rel = relative(UPLOADS_DIR, path);
+  return rel && !rel.startsWith('..') ? rel.split(sep).join('/') : null;
+};
+
+/**
+ * Borra una imagen subida: de R2 si esta activo y la ruta es de UPLOADS_DIR,
+ * si no del disco (comprobantes temporales, imagenes locales). Como unlink:
+ * rechaza con ENOENT si el archivo local no existe.
+ */
+export async function borrarImagen(path: string): Promise<void> {
+  const clave = R2_ACTIVO ? claveR2(path) : null;
+  if (clave) await borrarR2(clave);
+  else await fs.unlink(path);
+}
+
 /** Convierte un texto libre en un nombre de fichero seguro. */
 const getSafeBaseName = (value: string, fallback: string) => {
   const normalized = value
@@ -104,6 +122,8 @@ const decodeFilename = (name: string) => {
  * carpeta del repo: un archivo nuevo con el mismo nombre la taparia al servirse.
  */
 const getUniqueFilename = (base: string, ext: string) => {
+  // En R2 no se puede mirar el disco: un sufijo aleatorio evita pisar otra imagen.
+  if (R2_ACTIVO) return `${base}-${randomUUID().slice(0, 8)}${ext}`;
   let candidate = `${base}${ext}`;
   let index = 1;
 
@@ -138,8 +158,12 @@ function webpStorage(
           .then(async (webp) => {
             const filename = getUniqueFilename(base, '.webp');
             const path = join(dir, filename);
-            // 'wx': nunca sobrescribe una imagen existente.
-            await fs.writeFile(path, webp, { flag: 'wx' });
+            if (R2_ACTIVO) {
+              await subirR2(claveR2(path)!, webp);
+            } else {
+              // 'wx': nunca sobrescribe una imagen existente.
+              await fs.writeFile(path, webp, { flag: 'wx' });
+            }
             callback(null, {
               destination: dir,
               filename,
@@ -152,7 +176,7 @@ function webpStorage(
     },
     // Multer lo llama si la peticion falla despues de guardar el archivo.
     _removeFile(_req, file, callback) {
-      fs.rm(file.path, { force: true }).then(() => callback(null), callback);
+      borrarImagen(file.path).then(() => callback(null), callback);
     },
   };
 }
