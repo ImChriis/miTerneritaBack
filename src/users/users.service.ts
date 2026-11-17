@@ -178,13 +178,6 @@ export class UsersService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    if (updateUserDto.idRol) {
-      const role = await this.findRoleById(updateUserDto.idRol);
-      if (!role) {
-        throw new BadRequestException('Rol no encontrado');
-      }
-    }
-
     const { id: _ignoredId, password, ...safeUpdateData } = updateUserDto;
     Object.assign(user, safeUpdateData);
 
@@ -207,6 +200,37 @@ export class UsersService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Cambia el rol de una persona. Un admin no puede cambiar el suyo y el
+   * ultimo admin activo no puede dejar de serlo.
+   */
+  async updateRole(id: number, roleName: string, actorId: number) {
+    if (id === actorId) {
+      throw new ConflictException('No puedes cambiar tu propio rol');
+    }
+    const user = await this.findByIdWithRoleName(id);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    const role = await this.findRoleByName(roleName);
+    if (!role) {
+      throw new BadRequestException('Rol no encontrado');
+    }
+    if (user.roleName === 'admin' && roleName !== 'admin') {
+      // shortcut: contar y luego guardar no es atomico; dos demociones
+      // simultaneas podrian dejar 0 admins. Usar transaccion si pasa.
+      const admins = await this.usersRepository.count({
+        where: { idRol: user.idRol, status: 1 },
+      });
+      if (admins <= 1) {
+        throw new ConflictException(
+          'No se puede quitar el rol de admin al último administrador',
+        );
+      }
+    }
+    await this.usersRepository.update({ id }, { idRol: role.idRol });
   }
 
   async remove(id: number): Promise<void> {

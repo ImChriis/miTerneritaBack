@@ -219,7 +219,11 @@ export function webpUploadOptions({
       const description = (req as { body?: { description?: unknown } }).body
         ?.description;
       const base = getSafeBaseName(
-        typeof description === 'string' ? description : '',
+        // La descripcion llega en HTML del editor: sin etiquetas ni entidades
+        // (antes salian nombres como "p-the-nbsp-sound...").
+        typeof description === 'string'
+          ? description.replace(/<[^>]*>|&[#a-z0-9]+;/gi, ' ')
+          : '',
         fallbackBase,
       );
       return suffixWithFieldName ? `${base}-${file.fieldname}` : base;

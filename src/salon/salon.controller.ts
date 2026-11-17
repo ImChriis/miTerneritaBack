@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request';
@@ -25,14 +26,17 @@ export class SalonController {
     return this.salonService.plano();
   }
 
-  /** Zonas de las mesas y puestos tomados del evento (sin contar los del que consulta). */
+  /**
+   * Zonas de las mesas y puestos tomados del evento (sin contar los del que
+   * consulta). Publico: un visitante ve el mapa antes de iniciar sesion.
+   */
   @Get(':idEvents')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   estado(
     @Param('idEvents', ParseIntPipe) idEvents: number,
-    @Request() req: AuthenticatedRequest,
+    @Request() req: Partial<AuthenticatedRequest>,
   ) {
-    return this.salonService.estado(idEvents, req.user.userId);
+    return this.salonService.estado(idEvents, req.user?.userId ?? 0);
   }
 
   @Put(':idEvents/zonas')

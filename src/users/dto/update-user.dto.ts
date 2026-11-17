@@ -42,7 +42,6 @@ export class UpdateUserDto {
   @Max(1)
   readonly status?: number;
 
-  @IsOptional()
-  @IsInt()
-  readonly idRol?: number;
+  // El rol no va aqui: se cambia con PATCH /users/:id/role, que protege al
+  // ultimo admin. Mandar idRol en el PUT da 400 (forbidNonWhitelisted).
 }

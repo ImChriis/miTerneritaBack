@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Param,
   Body,
@@ -17,6 +18,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request';
 
@@ -92,6 +94,19 @@ export class UsersController {
       throw new NotFoundException('Usuario no encontrado');
     }
     return UserResponseDto.fromUser(user);
+  }
+
+  // Admin cambia el rol de otra persona (admin / user / client)
+  @Patch(':id/role')
+  @Roles('admin')
+  async updateRole(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() { role }: UpdateRoleDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<UserResponseDto> {
+    await this.usersService.updateRole(id, role, req.user.userId);
+    const user = await this.usersService.findByIdWithRoleName(id);
+    return UserResponseDto.fromUser(user!);
   }
 
   // Admin puede eliminar usuario
