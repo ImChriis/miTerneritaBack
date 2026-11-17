@@ -1,3 +1,4 @@
+import { SitemapController } from './sitemap.controller';
 import { Module } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { EventsController } from './events.controller';
@@ -13,7 +14,7 @@ import { ConsumeDetailsModule } from '../consumeDetails/consumeDetails.module';
     ConsumeDetailsModule,
   ],
   providers: [EventsService],
-  controllers: [EventsController],
+  controllers: [EventsController, SitemapController],
   exports: [EventsService, TypeOrmModule],
 })
 export class EventsModule {}

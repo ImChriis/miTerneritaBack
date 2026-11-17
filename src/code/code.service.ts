@@ -548,6 +548,35 @@ export class CodeService {
    * GET /code/scans. El personal ve solo sus escaneos (la lista de la app para
    * deshacer); el admin, todos, filtrando por evento o pago.
    */
+  /**
+   * Busqueda manual en la puerta: por cedula (solo digitos, se guardan con y
+   * sin prefijo) o por numero de compra (sin ceros a la izquierda).
+   */
+  async buscarEntrada(q: string, idEvents: number) {
+    const digitos = q.replace(/\D/g, '');
+    const doc = q.trim().toUpperCase().replace(/^0+/, '');
+    if (!digitos && !doc) return [];
+    return this.dataSource.query<
+      {
+        token: string;
+        nombre: string;
+        cedula: string | null;
+        noDocumento: string | null;
+      }[]
+    >(
+      `SELECT c.QR token, CONCAT_WS(' ', u.name, u.lastName) nombre, u.cedula, p.noDocumento
+       FROM code c
+       JOIN payment p ON p.idPayment = c.idPayment
+       JOIN users u ON u.idUser = p.idUser
+       WHERE p.idEvents = ? AND p.status = 'Aprobado' AND p.isDeleted = 0
+         AND ((? <> '' AND REGEXP_REPLACE(u.cedula, '[^0-9]', '') = ?)
+           OR TRIM(LEADING '0' FROM p.noDocumento) = ?)
+       ORDER BY p.idPayment DESC
+       LIMIT 10`,
+      [idEvents, digitos, digitos, doc],
+    );
+  }
+
   async listScans(
     filtros: {
       idEvents?: number;

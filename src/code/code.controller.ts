@@ -16,6 +16,7 @@ import { ValidateCodeDto } from './dto/validate-code.dto';
 import { LookupCodeDto } from './dto/lookup-code.dto';
 import { RedeemCodeDto } from './dto/redeem-code.dto';
 import { ListScansQueryDto } from './dto/list-scans.dto';
+import { BuscarEntradaDto } from './dto/buscar-entrada.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -88,6 +89,17 @@ export class CodeController {
    * Registro de escaneos. El personal ve solo los suyos (lista de "ultimos
    * escaneos" de la app); el admin, todos, filtrando por evento o pago.
    */
+  /**
+   * Cuando la camara no lee el QR: entradas aprobadas del evento por cedula
+   * del comprador o numero de compra. Devuelve el token para hacer el lookup.
+   */
+  @Post('buscar')
+  @HttpCode(HttpStatus.OK)
+  @Roles('admin', 'user')
+  async buscar(@Body() dto: BuscarEntradaDto) {
+    return this.codeService.buscarEntrada(dto.q, dto.idEvents);
+  }
+
   @Get('scans')
   @Roles('admin', 'user')
   async listScans(
