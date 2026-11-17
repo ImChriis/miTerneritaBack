@@ -67,6 +67,11 @@ export interface EscaneoResumen {
   deshecho: boolean;
   deshechoEn: Date | null;
   entradas: LineaResumen[];
+  /** Solo en GET /code/scans (historial): comprador, evento y valor de lo que paso. */
+  cliente?: { nombre: string; cedula: string | null } | null;
+  evento?: string | null;
+  /** USD: entradas que pasaron x precio unitario de su linea (botellas con acceso = 0). */
+  monto?: number;
 }
 
 export interface LookupResult extends EstadoEntrada {
@@ -544,7 +549,13 @@ export class CodeService {
    * deshacer); el admin, todos, filtrando por evento o pago.
    */
   async listScans(
-    filtros: { idEvents?: number; idPayment?: number; limit?: number },
+    filtros: {
+      idEvents?: number;
+      idPayment?: number;
+      limit?: number;
+      desde?: string;
+      hasta?: string;
+    },
     requester: AuthenticatedUser,
   ): Promise<EscaneoResumen[]> {
     const query = this.dataSource
@@ -568,8 +579,75 @@ export class CodeService {
         idPayment: filtros.idPayment,
       });
     }
+    // Dias completos en hora de Venezuela (UTC-4 fijo).
+    if (filtros.desde) {
+      query.andWhere('s.fecha >= :desde', {
+        desde: new Date(`${filtros.desde.slice(0, 10)}T00:00:00-04:00`),
+      });
+    }
+    if (filtros.hasta) {
+      query.andWhere('s.fecha < :hasta', {
+        hasta: new Date(
+          new Date(`${filtros.hasta.slice(0, 10)}T00:00:00-04:00`).getTime() +
+            24 * 3_600_000,
+        ),
+      });
+    }
 
-    return (await query.getMany()).map(resumirEscaneo);
+    const logs = await query.getMany();
+    if (!logs.length) return [];
+
+    // Comprador, evento y precio de cada linea, en dos consultas para todo el lote.
+    const pagos = new Map(
+      (
+        await this.dataSource.query<
+          {
+            idPayment: number;
+            nombre: string;
+            cedula: string | null;
+            evento: string | null;
+          }[]
+        >(
+          `SELECT p.idPayment, CONCAT_WS(' ', u.name, u.lastName) nombre, u.cedula, e.name evento
+           FROM payment p
+           LEFT JOIN users u ON u.idUser = p.idUser
+           LEFT JOIN events e ON e.idEvents = p.idEvents
+           WHERE p.idPayment IN (?)`,
+          [[...new Set(logs.map((l) => l.idPayment))]],
+        )
+      ).map((p) => [p.idPayment, p]),
+    );
+    const idsLinea = [
+      ...new Set(
+        logs.flatMap((l) => (l.detalles ?? []).map((d) => d.idPaymentDetails)),
+      ),
+    ];
+    const precios = new Map(
+      idsLinea.length
+        ? (
+            await this.dataSource.query<
+              { idPaymentDetails: number; precio: string }[]
+            >(
+              'SELECT idPaymentDetails, precio FROM paymentdetails WHERE idPaymentDetails IN (?)',
+              [idsLinea],
+            )
+          ).map((r) => [r.idPaymentDetails, Number(r.precio)])
+        : [],
+    );
+
+    return logs.map((log) => {
+      const pago = pagos.get(log.idPayment);
+      const monto = (log.detalles ?? []).reduce(
+        (suma, d) => suma + d.cantidad * (precios.get(d.idPaymentDetails) ?? 0),
+        0,
+      );
+      return {
+        ...resumirEscaneo(log),
+        cliente: pago ? { nombre: pago.nombre, cedula: pago.cedula } : null,
+        evento: pago?.evento ?? null,
+        monto: Math.round(monto * 100) / 100,
+      };
+    });
   }
 
   /**

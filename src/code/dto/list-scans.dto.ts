@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsDateString, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 /**
  * GET /code/scans. El personal solo ve sus propios escaneos (la lista de
@@ -21,7 +21,16 @@ export class ListScansQueryDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(500)
   @Type(() => Number)
   readonly limit?: number;
+
+  /** Dias de Venezuela (AAAA-MM-DD), inclusive. */
+  @IsOptional()
+  @IsDateString()
+  readonly desde?: string;
+
+  @IsOptional()
+  @IsDateString()
+  readonly hasta?: string;
 }
