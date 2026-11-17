@@ -51,5 +51,21 @@ export function validateEnv(config: Record<string, unknown>) {
     );
   }
 
+  // Correo: opcionales. Sin MAIL_PROVIDER se usa SMTP (MAIL_HOST, MAIL_USER...).
+  const mailProvider = config.MAIL_PROVIDER as string | undefined;
+  if (mailProvider && !['resend', 'smtp'].includes(mailProvider)) {
+    throw new Error(
+      `MAIL_PROVIDER debe ser "resend" o "smtp" (llego "${mailProvider}").`,
+    );
+  }
+  if (
+    mailProvider === 'resend' &&
+    (!config.RESEND_API_KEY || !config.MAIL_FROM)
+  ) {
+    logger.warn(
+      'MAIL_PROVIDER=resend sin RESEND_API_KEY o MAIL_FROM: los correos fallaran (los pagos siguen funcionando).',
+    );
+  }
+
   return config;
 }

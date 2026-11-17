@@ -16,7 +16,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ScheduleModule } from '@nestjs/schedule';
-import { join } from 'path';
 import { TicketsModule } from './tickets/tickets.module';
 import { MailModule } from './mail/mail.module';
 import { PostulacionesModule } from './postulaciones/postulaciones.module';
@@ -24,6 +23,7 @@ import { SalonModule } from './salon/salon.module';
 import { VisitasModule } from './visitas/visitas.module';
 import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
 import { validateEnv } from './config/env.validation';
+import { REPO_IMAGES_DIR, UPLOADS_DIR } from './common/uploads/webp-upload';
 
 @Module({
   imports: [
@@ -35,10 +35,17 @@ import { validateEnv } from './config/env.validation';
     // Se sirve únicamente la carpeta de imágenes. Antes se exponía todo
     // src/assets, que incluía el volcado de la base de datos (ternera.sql).
     // Las URLs públicas no cambian: siguen siendo /assets/img/<archivo>.
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'src', 'assets', 'img'),
-      serveRoot: '/assets/img',
-    }),
+    // Primero las subidas (IMAGES_DIR, el volumen en Railway) y luego las
+    // imagenes del repo. `exclude` evita que el 404 de la primera entrada
+    // responda antes de mirar en la segunda.
+    ServeStaticModule.forRoot(
+      {
+        rootPath: UPLOADS_DIR,
+        serveRoot: '/assets/img',
+        exclude: ['/assets/img/{*any}'],
+      },
+      { rootPath: REPO_IMAGES_DIR, serveRoot: '/assets/img' },
+    ),
     // Tareas programadas (tasa BCV).
     ScheduleModule.forRoot(),
     DatabaseModule,

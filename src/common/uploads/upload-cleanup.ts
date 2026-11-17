@@ -52,7 +52,7 @@ export async function discardUploadedFiles(
 }
 
 /**
- * Borra una imagen de src/assets/img si ya no la usa ningun evento, comida o
+ * Borra una imagen de UPLOADS_DIR (IMAGES_DIR) si ya no la usa ningun evento, comida o
  * bebida. Se llama al reemplazar la imagen de un registro o al borrarlo.
  *
  * La comprobacion es necesaria porque una misma imagen se puede reutilizar:

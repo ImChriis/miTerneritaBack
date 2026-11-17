@@ -4,6 +4,7 @@ import { diskStorage } from 'multer';
 import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import { basename, join } from 'path';
+import { imagenAWebp } from './webp-upload';
 
 /**
  * Comprobantes de pago: capturas o PDF de transferencias bancarias, con nombre,
@@ -130,4 +131,22 @@ export async function leerYBorrar(file: Express.Multer.File): Promise<Buffer> {
   const data = await fs.readFile(file.path);
   await fs.rm(file.path, { force: true });
   return data;
+}
+
+/**
+ * Como leerYBorrar, pero las imagenes se pasan a WebP (el PDF queda igual).
+ * Devuelve tambien el nombre con la extension final: de ella sale el
+ * Content-Type con el que GET /payment/:id/comprobante lo devuelve.
+ */
+export async function leerComprobante(
+  file: Express.Multer.File,
+): Promise<{ data: Buffer; filename: string }> {
+  const data = await leerYBorrar(file);
+  if (file.mimetype === 'application/pdf') {
+    return { data, filename: file.filename };
+  }
+  return {
+    data: await imagenAWebp(data),
+    filename: file.filename.replace(/\.[a-z]+$/, '.webp'),
+  };
 }

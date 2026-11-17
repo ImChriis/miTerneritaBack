@@ -78,7 +78,7 @@ export class EventsController {
   }
 
   /**
-   * Sube fotos .webp a la galeria. El front las manda en tandas de
+   * Sube fotos a la galeria (se guardan como .webp). El front las manda en tandas de
    * FOTOS_POR_TANDA; sin SkipThrottle, unas cientos de fotos chocarian con el
    * limite global de peticiones por minuto.
    */
@@ -98,7 +98,7 @@ export class EventsController {
     @UploadedFiles() files: Express.Multer.File[],
   ) {
     if (!files?.length) {
-      throw new BadRequestException('Sube al menos una foto .webp');
+      throw new BadRequestException('Sube al menos una foto');
     }
     return this.eventsService.addPhotos(id, files);
   }

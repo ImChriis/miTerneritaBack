@@ -28,7 +28,7 @@ import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-requ
 import {
   assertComprobanteReal,
   comprobanteUploadOptions,
-  leerYBorrar,
+  leerComprobante,
 } from '../common/uploads/comprobante-upload';
 
 @Controller('payment')
@@ -60,9 +60,11 @@ export class PaymentsController {
     // Un cliente siempre paga por transferencia, pago movil o Zelle: necesita
     // comprobante. Solo el admin registra pagos en efectivo sin el.
     let comprobanteData: Buffer | undefined;
+    let comprobanteNombre: string | undefined;
     if (comprobante) {
       await assertComprobanteReal(comprobante);
-      comprobanteData = await leerYBorrar(comprobante);
+      ({ data: comprobanteData, filename: comprobanteNombre } =
+        await leerComprobante(comprobante));
     } else if (req.user.role !== 'admin') {
       throw new BadRequestException('Adjunta el comprobante de pago');
     }
@@ -70,7 +72,7 @@ export class PaymentsController {
     return this.paymentsService.create(
       createPaymentDto,
       req.user,
-      comprobante?.filename,
+      comprobanteNombre,
       comprobanteData,
     );
   }
