@@ -161,20 +161,22 @@ export class VisitasService {
       }
     }
 
-    const top = [...vistasEvento.entries()]
-      .map(([idEvents, s]) => ({ idEvents, visitas: s.size }))
-      .sort((a, b) => b.visitas - a.visitas)
-      .slice(0, 5);
-    const nombres = top.length
+    // Solo eventos que siguen existiendo y no estan borrados (activo = 1).
+    const nombres = vistasEvento.size
       ? new Map(
           (
             await this.dataSource.query<{ idEvents: number; name: string }[]>(
-              'SELECT idEvents, name FROM events WHERE idEvents IN (?)',
-              [top.map((t) => t.idEvents)],
+              'SELECT idEvents, name FROM events WHERE activo = 1 AND idEvents IN (?)',
+              [[...vistasEvento.keys()]],
             )
           ).map((e) => [e.idEvents, e.name]),
         )
       : new Map<number, string>();
+    const top = [...vistasEvento.entries()]
+      .filter(([idEvents]) => nombres.has(idEvents))
+      .map(([idEvents, s]) => ({ idEvents, visitas: s.size }))
+      .sort((a, b) => b.visitas - a.visitas)
+      .slice(0, 5);
 
     // ---- Espera del cliente hasta que el admin revisa su pago ----
     const revisados = await this.dataSource.query<
@@ -237,7 +239,7 @@ export class VisitasService {
       },
       topEventos: top.map((t) => ({
         ...t,
-        nombre: nombres.get(t.idEvents) ?? `Evento ${t.idEvents}`,
+        nombre: nombres.get(t.idEvents)!,
         compras: comprasEvento.get(t.idEvents) ?? 0,
       })),
     };
