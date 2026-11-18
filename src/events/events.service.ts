@@ -9,7 +9,6 @@ import { UPLOADS_DIR } from '../common/uploads/webp-upload';
 import { join } from 'path';
 import { Event } from './entities/event.entity';
 import { EventPhoto } from './entities/event-photo.entity';
-import { Payment } from '../payments/entities/payment.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { exigirConfirmacion } from '../common/confirmar-borrado';
@@ -114,9 +113,12 @@ export class EventsService {
   async remove(id: number, confirmar = false): Promise<boolean> {
     const event = await this.findOne(id);
     // Con ventas no se borra: los pagos y tickets dependen del evento (FK en MySQL; en TiDB quedarian huerfanos).
-    const ventas = await this.eventsRepository.manager.count(Payment, {
-      where: { idEvents: { idEvents: id } },
-    });
+    // SQL directo sobre la columna: no depende de como TypeORM resuelva la relacion.
+    const [{ n }] = await this.eventsRepository.manager.query<{ n: string }[]>(
+      'SELECT COUNT(*) AS n FROM payment WHERE idEvents = ?',
+      [id],
+    );
+    const ventas = Number(n);
     if (ventas > 0) {
       exigirConfirmacion(
         confirmar,
@@ -132,7 +134,23 @@ export class EventsService {
     const imagenes = EVENT_IMAGES.map((campo) => event[campo]);
     const fotos = await this.photos(id);
     // Primero el evento: si tiene pagos la FK lo impide y la galeria sigue intacta.
-    await this.eventsRepository.remove(event);
+    try {
+      await this.eventsRepository.remove(event);
+    } catch (error: unknown) {
+      // Otra tabla aun apunta al evento (FK): se oculta igual que con ventas.
+      if ((error as { code?: string }).code !== 'ER_ROW_IS_REFERENCED_2') {
+        throw error;
+      }
+      exigirConfirmacion(
+        confirmar,
+        `"${event.name}" tiene datos asociados. Se ocultará de la cartelera y del panel; se conservan.`,
+      );
+      await this.eventsRepository.update(
+        { idEvents: id },
+        { status: 0, activo: 0 },
+      );
+      return false;
+    }
     // En MySQL ya lo hizo el ON DELETE CASCADE; en TiDB sin FKs, no.
     await this.photosRepository.delete({ idEvents: id });
     await this.borrarArchivos(fotos);
