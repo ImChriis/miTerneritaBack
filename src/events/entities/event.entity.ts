@@ -42,6 +42,10 @@ export class Event {
   @Column('tinyint')
   status: number;
 
+  /** 0 cuando el admin lo borra teniendo ventas (borrado logico). */
+  @Column({ type: 'tinyint', default: 1 })
+  activo?: number;
+
   /** 1 si el cliente puede pre-ordenar comida y bebida al comprar. */
   @Column('tinyint')
   consumo: number;

@@ -9,8 +9,10 @@ import { UPLOADS_DIR } from '../common/uploads/webp-upload';
 import { join } from 'path';
 import { Event } from './entities/event.entity';
 import { EventPhoto } from './entities/event-photo.entity';
+import { Payment } from '../payments/entities/payment.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { exigirConfirmacion } from '../common/confirmar-borrado';
 
 const EVENT_IMAGES = ['flyer', 'image1', 'image2', 'image3'] as const;
 
@@ -71,7 +73,7 @@ export class EventsService {
   }
 
   async findAll(): Promise<Event[]> {
-    return this.eventsRepository.find();
+    return this.eventsRepository.find({ where: { activo: 1 } });
   }
 
   // async findTicketOptions(): Promise<
@@ -84,7 +86,7 @@ export class EventsService {
 
   async findOne(id: number): Promise<Event> {
     const event = await this.eventsRepository.findOne({
-      where: { idEvents: id },
+      where: { idEvents: id, activo: 1 },
     });
     if (!event) {
       throw new NotFoundException('Evento no encontrado');
@@ -108,8 +110,25 @@ export class EventsService {
     return saved;
   }
 
-  async remove(id: number): Promise<void> {
+  /** true si se borro; false si tenia ventas y solo se oculto (activo 0). */
+  async remove(id: number, confirmar = false): Promise<boolean> {
     const event = await this.findOne(id);
+    // Con ventas no se borra: los pagos y tickets dependen del evento (FK en MySQL; en TiDB quedarian huerfanos).
+    const ventas = await this.eventsRepository.manager.count(Payment, {
+      where: { idEvents: { idEvents: id } },
+    });
+    if (ventas > 0) {
+      exigirConfirmacion(
+        confirmar,
+        `"${event.name}" tiene ${ventas} venta(s). Se ocultará de la cartelera y del panel; sus pagos y entradas se conservan.`,
+      );
+      // status 0 tambien cierra la venta (assertVentaAbierta).
+      await this.eventsRepository.update(
+        { idEvents: id },
+        { status: 0, activo: 0 },
+      );
+      return false;
+    }
     const imagenes = EVENT_IMAGES.map((campo) => event[campo]);
     const fotos = await this.photos(id);
     // Primero el evento: si tiene pagos la FK lo impide y la galeria sigue intacta.
@@ -120,5 +139,6 @@ export class EventsService {
     for (const imagen of imagenes) {
       await removeImageIfUnused(this.eventsRepository.manager, imagen);
     }
+    return true;
   }
 }

@@ -11,6 +11,7 @@ import {
   Request,
   ParseIntPipe,
   NotFoundException,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -114,8 +115,9 @@ export class UsersController {
   @Roles('admin')
   async remove(
     @Param('id', ParseIntPipe) id: number,
+    @Query('confirmar') confirmar?: string,
   ): Promise<{ message: string }> {
-    await this.usersService.remove(id);
+    await this.usersService.remove(id, confirmar === 'true');
     return { message: 'Usuario eliminado correctamente' };
   }
 }

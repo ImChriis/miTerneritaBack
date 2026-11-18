@@ -12,6 +12,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import * as bcrypt from 'bcrypt';
+import { Payment } from '../payments/entities/payment.entity';
+import { exigirConfirmacion } from '../common/confirmar-borrado';
 
 const EMAIL_EN_USO =
   'El correo electrónico ya está registrado. Por favor, utiliza otro.';
@@ -233,21 +235,26 @@ export class UsersService {
     await this.usersRepository.update({ id }, { idRol: role.idRol });
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number, confirmar = false): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
-    try {
-      await this.usersRepository.remove(user);
-    } catch (error: unknown) {
-      // Con pagos o entradas no se puede borrar: se perderian sus facturas.
-      // Se desactiva: el JwtStrategy rechaza status != 1 y la lista lo oculta.
-      if ((error as { code?: string }).code !== 'ER_ROW_IS_REFERENCED_2') {
-        throw error;
-      }
+    // Con pagos no se borra: se perderian sus facturas (en TiDB sin FKs
+    // quedarian huerfanas). Se desactiva: el JwtStrategy rechaza status != 1
+    // y la lista lo oculta.
+    const pagos = await this.usersRepository.manager.count(Payment, {
+      where: { idUser: { id } },
+    });
+    if (pagos > 0) {
+      exigirConfirmacion(
+        confirmar,
+        `${user.name ?? 'El usuario'} tiene ${pagos} compra(s). Se desactivará: no podrá entrar y se conservan sus facturas.`,
+      );
       await this.usersRepository.update({ id }, { status: 0 });
+      return;
     }
+    await this.usersRepository.remove(user);
   }
 
   // Encontrar todos los usuarios, incluyendo el nombre del rol

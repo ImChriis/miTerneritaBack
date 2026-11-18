@@ -8,6 +8,7 @@ import {
   Body,
   UseGuards,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
@@ -60,8 +61,11 @@ export class TicketsController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    await this.ticketsService.remove(id);
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('confirmar') confirmar?: string,
+  ) {
+    await this.ticketsService.remove(id, confirmar === 'true');
     return { message: 'Ticket eliminado correctamente' };
   }
 }

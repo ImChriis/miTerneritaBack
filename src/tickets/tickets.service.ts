@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ConflictException,
 } from '@nestjs/common';
 import { PaymentDetails } from '../payment-details/entities/paymentDetail.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,6 +10,7 @@ import { Ticket } from './entities/ticket.entity';
 import { Event } from '../events/entities/event.entity';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
+import { exigirConfirmacion } from '../common/confirmar-borrado';
 
 @Injectable()
 export class TicketsService {
@@ -29,11 +29,15 @@ export class TicketsService {
   }
 
   async findAll(): Promise<Ticket[]> {
-    return this.ticketsRepository.find({ relations: ['events'] });
+    return this.ticketsRepository.find({
+      where: { activo: 1 },
+      relations: ['events'],
+    });
   }
 
   async findTicketsGroupedByEvent() {
     const tickets = await this.ticketsRepository.find({
+      where: { activo: 1 },
       relations: ['events'],
     });
     const groupedData = tickets.reduce(
@@ -61,7 +65,7 @@ export class TicketsService {
 
   async findTicketsByEvent(eventId: number): Promise<Ticket[]> {
     const tickets = await this.ticketsRepository.find({
-      where: { idEvents: eventId },
+      where: { idEvents: eventId, activo: 1 },
       // Puedes descomentar la siguiente línea si también quieres que te devuelva
       // los datos del evento junto con cada ticket:
       // relations: ['events'],
@@ -105,16 +109,19 @@ export class TicketsService {
     return this.ticketsRepository.save(ticket);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number, confirmar = false): Promise<void> {
     const ticket = await this.findOne(id);
     // paymentdetails.idTicket es FK: con ventas el DELETE fallaba con un 500.
     const ventas = await this.ticketsRepository.manager
       .getRepository(PaymentDetails)
       .count({ where: { idTicket: id } });
     if (ventas > 0) {
-      throw new ConflictException(
-        `"${ticket.name}" ya tiene ventas: márcala como no disponible en lugar de borrarla`,
+      exigirConfirmacion(
+        confirmar,
+        `"${ticket.name}" tiene ${ventas} venta(s). Se ocultará y dejará de venderse; las entradas vendidas siguen válidas.`,
       );
+      await this.ticketsRepository.update(id, { status: 0, activo: 0 });
+      return;
     }
     await this.ticketsRepository.remove(ticket);
   }

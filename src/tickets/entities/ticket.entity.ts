@@ -21,6 +21,10 @@ export class Ticket {
   @Column({ type: 'tinyint', default: 1 })
   status?: number;
 
+  /** 0 cuando el admin lo borra teniendo ventas (borrado logico). */
+  @Column({ type: 'tinyint', default: 1 })
+  activo?: number;
+
   @Column({ type: 'int', nullable: true })
   idEvents?: number;
 

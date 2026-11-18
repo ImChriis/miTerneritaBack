@@ -11,6 +11,7 @@ import {
   UploadedFiles,
   ParseIntPipe,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { ConsumeDetailsService } from '../consumeDetails/consumeDetails.service';
@@ -217,8 +218,15 @@ export class EventsController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    await this.eventsService.remove(id);
-    return { message: 'Evento eliminado correctamente' };
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('confirmar') confirmar?: string,
+  ) {
+    const borrado = await this.eventsService.remove(id, confirmar === 'true');
+    return {
+      message: borrado
+        ? 'Evento eliminado correctamente'
+        : 'Evento eliminado (tenía ventas: se conservan sus pagos)',
+    };
   }
 }
