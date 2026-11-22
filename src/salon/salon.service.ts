@@ -84,48 +84,68 @@ export class SalonService {
   }
 
   /**
-   * El admin marca (o libera) un puesto como vendido por fuera. Solo si nadie
-   * lo tiene vendido o apartado; liberar solo quita lo marcado por fuera.
+   * El admin marca (o libera) puestos como vendidos por fuera: uno, una mesa
+   * entera o los de un arrastre. Al marcar se saltan los que un cliente ya
+   * compro o tiene apartados (con uno solo, se avisa); liberar solo quita lo
+   * marcado por fuera.
    */
   async marcarPorFuera(
     idEvents: number,
-    asiento: string,
+    asientos: string[],
     vendido: boolean,
   ): Promise<EstadoSalon> {
-    if (!MESA_DE_ASIENTO.has(asiento)) {
-      throw new BadRequestException(`El puesto ${asiento} no existe`);
+    const malos = asientos.filter((a) => !MESA_DE_ASIENTO.has(a));
+    if (malos.length) {
+      throw new BadRequestException(
+        `Puestos que no existen: ${malos.join(', ')}`,
+      );
     }
     await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Asiento);
       if (!vendido) {
         await repo.delete({
           idEvents,
-          asiento,
+          asiento: In(asientos),
           idUser: POR_FUERA_USER,
           idPayment: IsNull(),
         });
         return;
       }
       const ahora = new Date();
-      const fila = await repo.findOne({
-        where: { idEvents, asiento },
+      const filas = await repo.find({
+        where: { idEvents, asiento: In(asientos) },
         lock: { mode: 'pessimistic_write' },
       });
-      if (fila && esPorFuera(fila)) return;
-      if (fila && (fila.idPayment || (fila.vence && fila.vence > ahora))) {
+      const deClientes = filas.filter(
+        (f) => !esPorFuera(f) && (f.idPayment || (f.vence && f.vence > ahora)),
+      );
+      if (asientos.length === 1 && deClientes.length) {
+        const f = deClientes[0];
         throw new ConflictException(
-          `El puesto ${asiento} ya esta ${fila.idPayment ? 'vendido' : 'apartado por un cliente'}`,
+          `El puesto ${f.asiento} ya esta ${f.idPayment ? 'vendido' : 'apartado por un cliente'}`,
         );
       }
-      // Un apartado vencido ocupa la clave unica (evento, puesto): se libera.
-      if (fila) await repo.delete({ idAsiento: fila.idAsiento });
-      await repo.insert({
-        idEvents,
-        asiento,
-        idUser: POR_FUERA_USER,
-        idPayment: null,
-        vence: NUNCA,
-      });
+      const tomados = new Set([
+        ...deClientes.map((f) => f.asiento),
+        ...filas.filter(esPorFuera).map((f) => f.asiento),
+      ]);
+      // Apartados vencidos: ocupan la clave unica (evento, puesto), se liberan.
+      const vencidos = filas.filter((f) => !tomados.has(f.asiento));
+      if (vencidos.length) {
+        await repo.delete({ idAsiento: In(vencidos.map((f) => f.idAsiento)) });
+      }
+      const nuevos = asientos.filter((a) => !tomados.has(a));
+      if (nuevos.length) {
+        await repo.insert(
+          nuevos.map((asiento) => ({
+            idEvents,
+            asiento,
+            idUser: POR_FUERA_USER,
+            idPayment: null,
+            vence: NUNCA,
+          })),
+        );
+      }
     });
     return this.estado(idEvents, -1);
   }
