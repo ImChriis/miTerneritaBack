@@ -9,8 +9,8 @@ import { Cron } from '@nestjs/schedule';
 import { Repository } from 'typeorm';
 import { Configuration } from './entities/configuration.entity';
 import { get } from 'https';
-import { rootCertificates } from 'tls';
-import { SECTIGO_DV_R36 } from './bcv-ca';
+import { connect, rootCertificates } from 'tls';
+import { X509Certificate } from 'crypto';
 
 /** Web del BCV: la fuente original (DolarApi llega a ir un dia atrasado). */
 const URL_BCV = 'https://www.bcv.org.ve/';
@@ -43,14 +43,45 @@ export function leerTasaBcv(html: string): Tasa {
 }
 
 /**
- * HTML de bcv.org.ve. Con https.get y no fetch: hace falta pasar `ca` con el
- * intermedio que el BCV no envia (ver bcv-ca.ts); la verificacion TLS sigue activa.
+ * El BCV envia en su servidor un intermedio que no es el que firma su
+ * certificado (pasa cada vez que lo renueva), y Node responde "unable to
+ * verify the first certificate". Como hace un navegador, se descarga el
+ * intermedio correcto de la URL "CA Issuers" (AIA) del propio certificado y se
+ * reintenta. Es seguro: ese intermedio solo sirve si lo firma una raiz de
+ * confianza, la verificacion TLS sigue activa.
  */
-function htmlBcv(): Promise<string> {
+const intermedios: string[] = [];
+
+/** PEM del intermedio que indica el certificado del BCV (campo AIA). */
+async function intermedioBcv(): Promise<string> {
+  const { host } = new URL(URL_BCV);
+  const infoAccess = await new Promise<string>((resolve, reject) => {
+    // Solo se lee el certificado; no se envia ni se recibe nada mas.
+    const socket = connect(
+      { host, port: 443, servername: host, rejectUnauthorized: false },
+      () => {
+        const cert = socket.getPeerCertificate();
+        socket.end();
+        resolve(cert.infoAccess?.['CA Issuers - URI']?.[0] ?? '');
+      },
+    );
+    socket.setTimeout(15_000, () =>
+      socket.destroy(new Error('tiempo de espera agotado')),
+    );
+    socket.on('error', reject);
+  });
+  if (!infoAccess)
+    throw new Error('el certificado del BCV no indica su intermedio');
+  const res = await fetch(infoAccess, { signal: AbortSignal.timeout(10_000) });
+  if (!res.ok) throw new Error(`intermedio HTTP ${res.status}`);
+  return new X509Certificate(Buffer.from(await res.arrayBuffer())).toString();
+}
+
+function pedirHtml(): Promise<string> {
   return new Promise((resolve, reject) => {
     const req = get(
       URL_BCV,
-      { ca: [...rootCertificates, SECTIGO_DV_R36], timeout: 15_000 },
+      { ca: [...rootCertificates, ...intermedios], timeout: 15_000 },
       (res) => {
         if (res.statusCode !== 200) {
           res.resume();
@@ -65,6 +96,22 @@ function htmlBcv(): Promise<string> {
     req.on('timeout', () => req.destroy(new Error('tiempo de espera agotado')));
     req.on('error', reject);
   });
+}
+
+/** HTML de bcv.org.ve; si falta el intermedio, lo descarga y reintenta. Exportada para probarla. */
+export async function htmlBcv(): Promise<string> {
+  try {
+    return await pedirHtml();
+  } catch (error) {
+    if (
+      (error as { code?: string }).code !== 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'
+    ) {
+      throw error;
+    }
+    const pem = await intermedioBcv();
+    if (!intermedios.includes(pem)) intermedios.push(pem);
+    return pedirHtml();
+  }
 }
 
 /** 'AAAA-MM-DD' en hora de Venezuela. */
