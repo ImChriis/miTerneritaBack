@@ -15,6 +15,15 @@ import { Ticket } from '../tickets/entities/ticket.entity';
 import { Asiento } from './entities/asiento.entity';
 import { MesaZona } from './entities/mesa-zona.entity';
 import { MESA_DE_ASIENTO, PLANO } from './plano';
+
+/**
+ * Puesto vendido por fuera (VVIP, taquilla sin pago en el sistema): una fila
+ * apartada sin usuario (idUser 0) que no vence nunca. Asi todas las reglas de
+ * apartados ya lo tratan como tomado, sin migrar la tabla.
+ */
+const POR_FUERA_USER = 0;
+const NUNCA = new Date('9999-12-31T00:00:00Z');
+const esPorFuera = (f: Asiento) => f.idUser === POR_FUERA_USER && !f.idPayment;
 import { ZonaMesaDto } from './dto/update-zonas.dto';
 
 export type EstadoAsiento = 'vendido' | 'apartado';
@@ -26,6 +35,8 @@ export interface EstadoSalon {
   ocupados: Record<string, EstadoAsiento>;
   /** Puestos que tiene apartados quien consulta (para retomar la compra). */
   mios: string[];
+  /** Puestos vendidos por fuera desde el mapa del admin (tambien en `ocupados`). */
+  porFuera: string[];
 }
 
 /** Una linea de entradas de la compra: tipo y cantidad. */
@@ -58,14 +69,65 @@ export class SalonService {
       .find({ where: { idEvents } });
     const ocupados: Record<string, EstadoAsiento> = {};
     const mios: string[] = [];
+    const porFuera: string[] = [];
     for (const f of filas) {
-      if (f.idPayment) ocupados[f.asiento] = 'vendido';
+      if (esPorFuera(f)) {
+        porFuera.push(f.asiento);
+        ocupados[f.asiento] = 'vendido';
+      } else if (f.idPayment) ocupados[f.asiento] = 'vendido';
       else if (f.vence && f.vence > ahora) {
         if (f.idUser === idUser) mios.push(f.asiento);
         else ocupados[f.asiento] = 'apartado';
       }
     }
-    return { zonas: Object.fromEntries(zonas), ocupados, mios };
+    return { zonas: Object.fromEntries(zonas), ocupados, mios, porFuera };
+  }
+
+  /**
+   * El admin marca (o libera) un puesto como vendido por fuera. Solo si nadie
+   * lo tiene vendido o apartado; liberar solo quita lo marcado por fuera.
+   */
+  async marcarPorFuera(
+    idEvents: number,
+    asiento: string,
+    vendido: boolean,
+  ): Promise<EstadoSalon> {
+    if (!MESA_DE_ASIENTO.has(asiento)) {
+      throw new BadRequestException(`El puesto ${asiento} no existe`);
+    }
+    await this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(Asiento);
+      if (!vendido) {
+        await repo.delete({
+          idEvents,
+          asiento,
+          idUser: POR_FUERA_USER,
+          idPayment: IsNull(),
+        });
+        return;
+      }
+      const ahora = new Date();
+      const fila = await repo.findOne({
+        where: { idEvents, asiento },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (fila && esPorFuera(fila)) return;
+      if (fila && (fila.idPayment || (fila.vence && fila.vence > ahora))) {
+        throw new ConflictException(
+          `El puesto ${asiento} ya esta ${fila.idPayment ? 'vendido' : 'apartado por un cliente'}`,
+        );
+      }
+      // Un apartado vencido ocupa la clave unica (evento, puesto): se libera.
+      if (fila) await repo.delete({ idAsiento: fila.idAsiento });
+      await repo.insert({
+        idEvents,
+        asiento,
+        idUser: POR_FUERA_USER,
+        idPayment: null,
+        vence: NUNCA,
+      });
+    });
+    return this.estado(idEvents, -1);
   }
 
   /** El admin asigna la zona de cada mesa; reemplaza la asignacion anterior. */
@@ -104,7 +166,7 @@ export class SalonService {
         );
       }
     });
-    return this.estado(idEvents, 0);
+    return this.estado(idEvents, -1);
   }
 
   /** Puestos validos del evento: existen en el plano y su mesa esta a la venta. */

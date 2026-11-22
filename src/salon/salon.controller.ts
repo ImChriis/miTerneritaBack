@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -47,5 +48,26 @@ export class SalonController {
     @Body() dto: UpdateZonasDto,
   ) {
     return this.salonService.guardarZonas(idEvents, dto.zonas);
+  }
+
+  /** Marca un puesto como vendido por fuera (VVIP sin pago en el sistema). */
+  @Put(':idEvents/por-fuera/:asiento')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  marcarPorFuera(
+    @Param('idEvents', ParseIntPipe) idEvents: number,
+    @Param('asiento') asiento: string,
+  ) {
+    return this.salonService.marcarPorFuera(idEvents, asiento, true);
+  }
+
+  @Delete(':idEvents/por-fuera/:asiento')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  liberarPorFuera(
+    @Param('idEvents', ParseIntPipe) idEvents: number,
+    @Param('asiento') asiento: string,
+  ) {
+    return this.salonService.marcarPorFuera(idEvents, asiento, false);
   }
 }
