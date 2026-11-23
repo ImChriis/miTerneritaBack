@@ -16,7 +16,9 @@ const OFFSET_VE = 4 * HORA;
 const ACTIVA_MS = 2 * 60_000;
 /** Compras de mas de un dia no son una compra continua: se descartan. */
 const MAX_COMPRA_MS = DIA;
-const BOT = /bot|crawl|spider|slurp|preview|headless|lighthouse/i;
+// Robots que ejecutan JS y no dicen "bot": Search Console (Google-InspectionTool), Vercel, redes, monitores.
+const BOT =
+  /bot|crawl|spider|slurp|preview|headless|lighthouse|google|inspection|vercel|facebookexternalhit|whatsapp|python|curl|uptime|monitor|pingdom/i;
 const MOVIL = /mobi|android|iphone|ipad/i;
 
 /** La misma hora en Venezuela; se lee con getUTC*. */
