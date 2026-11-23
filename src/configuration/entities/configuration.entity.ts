@@ -1,5 +1,13 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
+/** Un día del horario del local. */
+export interface DiaHorario {
+  cerrado: boolean;
+  /** "HH:MM" en 24 h; si cierra antes de abrir, cierra al día siguiente. */
+  abre: string;
+  cierra: string;
+}
+
 @Entity('configuration')
 export class Configuration {
   @PrimaryGeneratedColumn({ name: 'idConfiguration' })
@@ -57,4 +65,8 @@ export class Configuration {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   trRif: string | null;
+
+  /** Horario del local, de lunes (0) a domingo (6). Solo informativo: la web vende siempre. */
+  @Column({ type: 'simple-json', nullable: true })
+  horario: DiaHorario[] | null;
 }

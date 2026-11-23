@@ -1,10 +1,30 @@
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
   IsEmail,
   IsOptional,
   IsString,
   IsNumber,
+  Matches,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export class DiaHorarioDto {
+  @IsBoolean()
+  readonly cerrado: boolean;
+
+  @Matches(HORA, { message: 'abre debe tener formato HH:MM' })
+  readonly abre: string;
+
+  @Matches(HORA, { message: 'cierra debe tener formato HH:MM' })
+  readonly cierra: string;
+}
 
 export class UpdateConfigurationDto {
   @IsOptional()
@@ -71,4 +91,13 @@ export class UpdateConfigurationDto {
   @IsString()
   @MaxLength(100)
   readonly trRif?: string;
+
+  /** Los 7 días, de lunes a domingo. */
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(7)
+  @ArrayMaxSize(7)
+  @ValidateNested({ each: true })
+  @Type(() => DiaHorarioDto)
+  readonly horario?: DiaHorarioDto[];
 }
