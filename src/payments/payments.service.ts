@@ -44,6 +44,9 @@ import {
   MIME_POR_EXTENSION,
 } from '../common/uploads/comprobante-upload';
 import { existsSync } from 'fs';
+import { createHash } from 'crypto';
+import { Workbook } from 'exceljs';
+import { conciliar, leerEstadoDeCuenta } from './conciliacion';
 import { extname } from 'path';
 
 // Lo que devuelve GET /payment/:id: es la factura que ve el cliente, con el
@@ -166,6 +169,26 @@ export class PaymentsService {
           }
         }
 
+        // La misma captura no sirve para dos compras (salvo si la otra fue rechazada).
+        const comprobanteHash = comprobanteData
+          ? createHash('sha256').update(comprobanteData).digest('hex')
+          : null;
+        if (comprobanteHash) {
+          const usado = await manager.getRepository(Payment).findOne({
+            where: {
+              comprobanteHash,
+              isDeleted: false,
+              status: Not(PaymentStatus.Rechazado),
+            },
+            select: { idPayment: true, noDocumento: true },
+          });
+          if (usado) {
+            throw new ConflictException(
+              `Este comprobante ya se usó en el pago N° ${usado.noDocumento ?? usado.idPayment}`,
+            );
+          }
+        }
+
         const tickets = ticketIds.length
           ? await manager
               .getRepository(Ticket)
@@ -276,6 +299,7 @@ export class PaymentsService {
             // vacio en los pagos en efectivo.
             comprobante,
             comprobanteData: comprobanteData ?? null,
+            comprobanteHash,
             idUser: user,
             idEvents: event,
             // `date` la rellena MySQL con su DEFAULT current_timestamp().
@@ -813,6 +837,163 @@ export class PaymentsService {
     }
 
     return updated;
+  }
+
+  /**
+   * Conciliacion bancaria: cruza el estado de cuenta con los pagos pendientes
+   * (no efectivo). No cambia nada: devuelve la propuesta y el admin decide.
+   */
+  async conciliar(data: Buffer, nombre: string) {
+    const filas = await leerEstadoDeCuenta(data, nombre);
+    const pendientes = await this.paymentsRepository.find({
+      where: {
+        status: PaymentStatus.Pendiente,
+        isDeleted: false,
+        banco: Not('Efectivo'),
+      },
+      relations: ['idUser', 'idEvents'],
+      order: { idPayment: 'ASC' },
+    });
+    const porId = new Map(pendientes.map((p) => [p.idPayment, p]));
+    return {
+      filas: filas.length,
+      pendientes: pendientes.length,
+      resultados: conciliar(pendientes, filas).map((r) => {
+        const p = porId.get(r.idPayment)!;
+        const usd = Number(p.totalGeneral ?? 0);
+        const tasa = Number(p.tasaDolar ?? 0);
+        return {
+          ...r,
+          noDocumento: p.noDocumento,
+          cliente: [p.idUser?.name, p.idUser?.lastName]
+            .filter(Boolean)
+            .join(' '),
+          cedula: p.idUser?.cedula ?? null,
+          evento: p.idEvents?.name ?? null,
+          banco: p.banco,
+          referencia: p.referencia,
+          totalUsd: usd,
+          totalBs: tasa ? Math.round(usd * tasa * 100) / 100 : null,
+        };
+      }),
+    };
+  }
+
+  /**
+   * Aprueba varios pagos (los que el admin confirmo de la conciliacion). Uno a
+   * uno por updateStatus: cada uno emite su QR y su correo; si uno falla (aforo)
+   * los demas siguen.
+   */
+  async aprobarLote(ids: number[]) {
+    const aprobados: number[] = [];
+    const errores: { idPayment: number; mensaje: string }[] = [];
+    for (const id of [...new Set(ids)]) {
+      try {
+        await this.updateStatus(id, { status: PaymentStatus.Aprobado });
+        aprobados.push(id);
+      } catch (e) {
+        errores.push({ idPayment: id, mensaje: (e as Error).message });
+      }
+    }
+    return { aprobados, errores };
+  }
+
+  /** Excel de pagos para el contador: una fila por pago, con tasa y montos en USD y Bs. */
+  async exportar(filtro: {
+    desde?: string;
+    hasta?: string;
+    idEvents?: number;
+    status?: PaymentStatus;
+  }): Promise<Buffer> {
+    const qb = this.paymentsRepository
+      .createQueryBuilder('p')
+      .leftJoinAndSelect('p.idUser', 'u')
+      .leftJoinAndSelect('p.idEvents', 'e')
+      .where('p.isDeleted = 0')
+      .orderBy('p.date', 'ASC');
+    if (filtro.desde) qb.andWhere('p.date >= :desde', { desde: filtro.desde });
+    if (filtro.hasta) {
+      qb.andWhere('p.date < DATE_ADD(:hasta, INTERVAL 1 DAY)', {
+        hasta: filtro.hasta,
+      });
+    }
+    if (filtro.idEvents) {
+      qb.andWhere('p.idEvents = :idEvents', { idEvents: filtro.idEvents });
+    }
+    if (filtro.status) {
+      qb.andWhere('p.status = :status', { status: filtro.status });
+    }
+    const pagos = await qb.getMany();
+
+    // Excel no tiene zona horaria: se escribe la hora de Caracas (UTC-4, sin horario de verano).
+    const caracas = (d: Date | string) =>
+      new Date(new Date(d).getTime() - 4 * 3600 * 1000);
+    const libro = new Workbook();
+    libro.creator = 'Mi Ternerita';
+    const hoja = libro.addWorksheet('Pagos', {
+      views: [{ state: 'frozen', ySplit: 1 }],
+    });
+    const fecha = { numFmt: 'dd/mm/yyyy hh:mm' };
+    const dinero = { numFmt: '#,##0.00' };
+    hoja.columns = [
+      { header: 'N° documento', key: 'doc', width: 14 },
+      { header: 'Fecha', key: 'fecha', width: 18, style: fecha },
+      { header: 'Evento', key: 'evento', width: 28 },
+      { header: 'Fecha evento', key: 'fechaEvento', width: 13 },
+      { header: 'Cliente', key: 'cliente', width: 26 },
+      { header: 'Cédula', key: 'cedula', width: 14 },
+      { header: 'Correo', key: 'correo', width: 28 },
+      { header: 'Método / banco', key: 'banco', width: 18 },
+      { header: 'Referencia', key: 'referencia', width: 18 },
+      { header: 'Fecha transferencia', key: 'fechaTr', width: 14 },
+      { header: 'Estado', key: 'estado', width: 11 },
+      { header: 'Revisado', key: 'revisado', width: 18, style: fecha },
+      {
+        header: 'Tasa BCV',
+        key: 'tasa',
+        width: 11,
+        style: { numFmt: '#,##0.0000' },
+      },
+      { header: 'Total USD', key: 'usd', width: 12, style: dinero },
+      { header: 'Total Bs', key: 'bs', width: 15, style: dinero },
+    ];
+    hoja.getRow(1).font = { bold: true };
+    hoja.autoFilter = { from: 'A1', to: 'O1' };
+
+    for (const p of pagos) {
+      const usd = Number(p.totalGeneral ?? 0);
+      const tasa = p.tasaDolar ? Number(p.tasaDolar) : null;
+      hoja.addRow({
+        doc: p.noDocumento,
+        fecha: p.date ? caracas(p.date) : null,
+        evento: p.idEvents?.name ?? '',
+        fechaEvento: p.idEvents?.date ?? '',
+        cliente: [p.idUser?.name, p.idUser?.lastName].filter(Boolean).join(' '),
+        cedula: p.idUser?.cedula ?? '',
+        correo: p.idUser?.email ?? '',
+        banco: p.banco ?? '',
+        referencia: p.banco === 'Efectivo' ? '' : (p.referencia ?? ''),
+        fechaTr: p.fechaTransferencia ?? '',
+        estado: p.status,
+        revisado: p.revisado ? caracas(p.revisado) : null,
+        tasa,
+        usd,
+        bs: tasa ? Math.round(usd * tasa * 100) / 100 : null,
+      });
+    }
+
+    // Total cobrado (solo aprobados) con formula: sigue valiendo si el contador filtra o edita.
+    const ultima = pagos.length + 1;
+    hoja.addRow([]);
+    const total = hoja.addRow({ evento: 'Total aprobado' });
+    total.font = { bold: true };
+    for (const col of ['N', 'O']) {
+      total.getCell(col).value = {
+        formula: `SUMIFS(${col}2:${col}${ultima},K2:K${ultima},"Aprobado")`,
+      };
+    }
+
+    return Buffer.from(await libro.xlsx.writeBuffer());
   }
 
   /**

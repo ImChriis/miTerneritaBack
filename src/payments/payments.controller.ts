@@ -6,6 +6,7 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   Body,
   UseGuards,
   Request,
@@ -18,6 +19,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { createReadStream } from 'fs';
+import { memoryStorage } from 'multer';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsInt } from 'class-validator';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
@@ -31,6 +34,16 @@ import {
   comprobanteUploadOptions,
   leerComprobante,
 } from '../common/uploads/comprobante-upload';
+
+class AprobarLoteDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(200)
+  @IsInt({ each: true })
+  readonly ids: number[];
+}
+
+const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
 @Controller('payment')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -48,6 +61,66 @@ export class PaymentsController {
   @Roles('admin')
   reporte(@Param('idEvents', ParseIntPipe) idEvents: number) {
     return this.paymentsService.reporte(idEvents);
+  }
+
+  /**
+   * Conciliacion bancaria: el estado de cuenta (xlsx o csv) se cruza con los
+   * pagos pendientes. Solo propone; aprobar es POST /payment/aprobar-lote.
+   */
+  @Post('conciliar')
+  @Roles('admin')
+  @UseInterceptors(
+    FileInterceptor('archivo', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    }),
+  )
+  conciliar(@UploadedFile() archivo: Express.Multer.File | undefined) {
+    if (!archivo) throw new BadRequestException('Adjunta el estado de cuenta');
+    return this.paymentsService.conciliar(archivo.buffer, archivo.originalname);
+  }
+
+  @Post('aprobar-lote')
+  @Roles('admin')
+  aprobarLote(@Body() dto: AprobarLoteDto) {
+    return this.paymentsService.aprobarLote(dto.ids);
+  }
+
+  /** Excel de pagos. Filtros opcionales: desde/hasta (AAAA-MM-DD), idEvents, status. */
+  @Get('exportar')
+  @Roles('admin')
+  async exportar(
+    @Query('desde') desde: string | undefined,
+    @Query('hasta') hasta: string | undefined,
+    @Query('idEvents') idEvents: string | undefined,
+    @Query('status') status: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    for (const f of [desde, hasta]) {
+      if (f && !FECHA.test(f)) {
+        throw new BadRequestException('Fechas en formato AAAA-MM-DD');
+      }
+    }
+    if (
+      status &&
+      !Object.values(PaymentStatus).includes(status as PaymentStatus)
+    ) {
+      throw new BadRequestException('Estado no válido');
+    }
+    const data = await this.paymentsService.exportar({
+      desde,
+      hasta,
+      idEvents: idEvents ? Number(idEvents) || undefined : undefined,
+      status: status as PaymentStatus | undefined,
+    });
+    const nombre = `pagos${desde ? '-' + desde : ''}${hasta ? '_' + hasta : ''}.xlsx`;
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${nombre}"`,
+      'Cache-Control': 'private, no-store',
+    });
+    return new StreamableFile(data);
   }
 
   @Post()

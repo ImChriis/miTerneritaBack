@@ -76,6 +76,10 @@ export class Payment {
   @Column({ type: 'mediumblob', nullable: true, select: false })
   comprobanteData: Buffer | null;
 
+  /** SHA-256 del comprobante: la misma imagen no sirve para dos pagos. */
+  @Column({ type: 'char', length: 64, nullable: true, select: false })
+  comprobanteHash: string | null;
+
   @Column({ length: 100, nullable: true })
   banco: string;
 
