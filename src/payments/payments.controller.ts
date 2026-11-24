@@ -21,6 +21,7 @@ import { createReadStream } from 'fs';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
+import { PaymentStatus } from './enums/payment-status.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -69,12 +70,21 @@ export class PaymentsController {
       throw new BadRequestException('Adjunta el comprobante de pago');
     }
 
-    return this.paymentsService.create(
+    const payment = await this.paymentsService.create(
       createPaymentDto,
       req.user,
       comprobanteNombre,
       comprobanteData,
     );
+
+    // Efectivo registrado por el admin: el dinero ya está en mano, se aprueba de una.
+    // Por updateStatus: emite el QR, envía el correo y marca la revisión como siempre.
+    if (!comprobante && req.user.role === 'admin') {
+      return this.paymentsService.updateStatus(payment.idPayment, {
+        status: PaymentStatus.Aprobado,
+      });
+    }
+    return payment;
   }
 
   @Get()
