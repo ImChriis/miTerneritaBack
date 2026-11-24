@@ -952,7 +952,7 @@ export class PaymentsService {
         header: 'Tasa BCV',
         key: 'tasa',
         width: 11,
-        style: { numFmt: '#,##0.0000' },
+        style: { numFmt: '#,##0.00' },
       },
       { header: 'Total USD', key: 'usd', width: 12, style: dinero },
       { header: 'Total Bs', key: 'bs', width: 15, style: dinero },
