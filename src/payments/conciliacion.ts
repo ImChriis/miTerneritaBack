@@ -109,11 +109,41 @@ export function analizarFila(
   };
 }
 
-/** Lee el estado de cuenta (xlsx o csv) a filas. */
+/**
+ * Linea del .txt de ancho fijo del BNC:
+ * tipo(1) dia(2) mes(2) año(4) referencia(18) codigo(6) descripcion... debito credito saldo.
+ * Ej.: "125112026000081947000178820P2POTRAbono Pago Movil BNC ... 0000000000000,00 0000000102400,00 0000000118971,31..."
+ */
+const LINEA_BNC =
+  /^\d(\d{2})(\d{2})(\d{4})(\d{18})([A-Z0-9]{6})(.*?)(-?\d{13},\d{2}) (-?\d{13},\d{2}) (-?\d{13},\d{2})/;
+
+/** Si el texto es un estado de cuenta BNC, sus filas; si no, null. */
+export function leerBnc(texto: string): FilaBanco[] | null {
+  const filas: FilaBanco[] = [];
+  texto.split(/\r?\n/).forEach((linea, i) => {
+    const m = LINEA_BNC.exec(linea);
+    if (!m) return;
+    const [, dia, mes, año, ref, , desc, , credito] = m;
+    const abono = aNumero(credito) ?? 0;
+    // Solo los abonos: un cargo (pago que sale) nunca paga una entrada.
+    if (!abono) return;
+    filas.push({
+      numero: i + 1,
+      texto: `${dia}/${mes}/${año} | ${ref} | ${desc.replace(/\s+/g, ' ').trim()} | ${credito.replace(/^0+(?=\d)/, '')}`,
+      referencias: [ref],
+      montos: [abono],
+    });
+  });
+  return filas.length ? filas : null;
+}
+
+/** Lee el estado de cuenta (xlsx, csv o txt del BNC) a filas. */
 export async function leerEstadoDeCuenta(
   data: Buffer,
   nombre: string,
 ): Promise<FilaBanco[]> {
+  const bnc = leerBnc(data.toString('utf8'));
+  if (bnc) return bnc;
   const libro = new Workbook();
   const ext = nombre.toLowerCase().split('.').pop();
   try {
@@ -134,7 +164,7 @@ export async function leerEstadoDeCuenta(
     }
   } catch {
     throw new BadRequestException(
-      'Sube el estado de cuenta en .xlsx o .csv (si el banco da .xls, ábrelo en Excel y guárdalo como .xlsx)',
+      'Sube el estado de cuenta en .xlsx, .csv o el .txt del BNC (si el banco da .xls, ábrelo en Excel y guárdalo como .xlsx)',
     );
   }
 
