@@ -34,7 +34,7 @@ export class Event {
   image1: string;
 
   /** Opcional: no se muestra en la web (solo flyer, image1 e image3). */
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   image2: string | null;
 
   @Column({ length: 255 })
