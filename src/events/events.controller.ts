@@ -153,9 +153,10 @@ export class EventsController {
     const image2 = files?.image2?.[0]?.filename ?? createEventDto.image2;
     const image3 = files?.image3?.[0]?.filename ?? createEventDto.image3;
 
-    if (!flyer || !image1 || !image2 || !image3) {
+    // La Imagen 2 es opcional: no se muestra en la web.
+    if (!flyer || !image1 || !image3) {
       throw new BadRequestException(
-        'Todas las imagenes y el flyer son obligatorios',
+        'Sube el flyer, la foto del evento (Imagen 1) y la del carrusel (Imagen 3)',
       );
     }
 
