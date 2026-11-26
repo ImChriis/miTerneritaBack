@@ -1,4 +1,4 @@
-import { Controller, Get, Header } from '@nestjs/common';
+import { Controller, Get, Header, Redirect } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Event } from './entities/event.entity';
@@ -23,6 +23,22 @@ export class SitemapController {
   constructor(
     @InjectRepository(Event) private readonly events: Repository<Event>,
   ) {}
+
+  /** La raiz de la API no es una pagina: Google la reportaba como 404. Se manda a la web. */
+  @Get()
+  @Redirect(SITIO, 301)
+  raiz() {}
+
+  /**
+   * La API no se indexa (sus respuestas son JSON); solo las imagenes de los
+   * eventos, que la web enlaza desde /assets/img y salen en Google Imagenes.
+   */
+  @Get('robots.txt')
+  @Header('Content-Type', 'text/plain; charset=utf-8')
+  @Header('Cache-Control', 'public, max-age=86400')
+  robots(): string {
+    return 'User-agent: *\nAllow: /assets/img/\nAllow: /sitemap.xml\nDisallow: /\n';
+  }
 
   @Get('sitemap.xml')
   @Header('Content-Type', 'application/xml; charset=utf-8')
