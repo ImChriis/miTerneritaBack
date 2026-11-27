@@ -103,6 +103,11 @@ export class Payment {
   @Column({ type: 'datetime', nullable: true })
   revisado: Date | null;
 
+  /** Personal que registró el pago desde el admin; null si lo hizo el cliente en la web. */
+  @ManyToOne(() => User, { eager: false, nullable: true })
+  @JoinColumn({ name: 'idRegistradoPor' })
+  registradoPor: User | null;
+
   @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 

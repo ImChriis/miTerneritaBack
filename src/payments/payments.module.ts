@@ -14,6 +14,7 @@ import { MailModule } from '../mail/mail.module';
 import { SalonModule } from '../salon/salon.module';
 import { Reserva } from './entities/reserva.entity';
 import { ReservasController } from './reservas.controller';
+import { EntradaController } from './entrada.controller';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { ReservasController } from './reservas.controller';
     ConfigModule,
   ],
   providers: [PaymentsService],
-  controllers: [PaymentsController, ReservasController],
+  controllers: [PaymentsController, ReservasController, EntradaController],
   exports: [PaymentsService, TypeOrmModule],
 })
 export class PaymentsModule {}

@@ -17,6 +17,7 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ClienteRapidoDto } from './dto/cliente-rapido.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -41,6 +42,13 @@ export class UsersController {
   }
 
   // Solo admin puede listar todos los usuarios
+  /** Registro asistido: alta de un cliente sin cuenta (correo opcional, sin contraseña). */
+  @Post('cliente-rapido')
+  @Roles('admin')
+  crearClienteRapido(@Body() dto: ClienteRapidoDto): Promise<UserResponseDto> {
+    return this.usersService.crearClienteRapido(dto);
+  }
+
   @Get()
   @Roles('admin')
   async findAll(): Promise<UserResponseDto[]> {

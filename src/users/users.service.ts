@@ -9,6 +9,8 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { ClienteRapidoDto } from './dto/cliente-rapido.dto';
+import { randomBytes } from 'crypto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import * as bcrypt from 'bcrypt';
@@ -158,6 +160,46 @@ export class UsersService {
     } catch (error) {
       // Dos altas simultaneas con el mismo email o cedula pasan las
       // comprobaciones de arriba; la restriccion UNIQUE frena la segunda.
+      const dbError = error as { code?: string; sqlMessage?: string };
+      if (dbError.code === 'ER_DUP_ENTRY') {
+        throw new BadRequestException(
+          dbError.sqlMessage?.includes('cedula') ? CEDULA_EN_USO : EMAIL_EN_USO,
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Registro asistido: el personal da de alta a un cliente sin cuenta (sin contraseña
+   * que recordar y con el correo opcional). Se guarda una contraseña aleatoria que
+   * nadie conoce; si el cliente tiene correo puede recuperarla.
+   */
+  async crearClienteRapido(dto: ClienteRapidoDto): Promise<UserResponseDto> {
+    if (await this.buscarPorCedula(dto.cedula)) {
+      throw new BadRequestException(CEDULA_EN_USO);
+    }
+    const email = dto.email?.trim().toLowerCase() || undefined;
+    if (email && (await this.findByEmail(email))) {
+      throw new BadRequestException(EMAIL_EN_USO);
+    }
+    const role = await this.findRoleByName('client');
+    if (!role) throw new BadRequestException('Rol "client" no encontrado.');
+    try {
+      const saved = await this.usersRepository.save(
+        this.usersRepository.create({
+          name: dto.name.trim(),
+          lastName: dto.lastName.trim(),
+          cedula: dto.cedula,
+          phone: dto.phone.trim(),
+          email,
+          password: await bcrypt.hash(randomBytes(24).toString('hex'), 10),
+          idRol: role.idRol,
+          status: 1,
+        }),
+      );
+      return UserResponseDto.fromUser({ ...saved, roleName: role.name });
+    } catch (error) {
       const dbError = error as { code?: string; sqlMessage?: string };
       if (dbError.code === 'ER_DUP_ENTRY') {
         throw new BadRequestException(

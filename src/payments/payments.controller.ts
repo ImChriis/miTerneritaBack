@@ -160,6 +160,13 @@ export class PaymentsController {
     return payment;
   }
 
+  /** Enlace público de la entrada para compartirla (WhatsApp, impresa). */
+  @Get(':id/enlace-entrada')
+  @Roles('admin')
+  enlaceEntrada(@Param('id', ParseIntPipe) id: number) {
+    return this.paymentsService.enlaceEntrada(id);
+  }
+
   @Get()
   @Roles('admin')
   async findAll() {

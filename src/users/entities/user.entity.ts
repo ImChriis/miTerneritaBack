@@ -25,7 +25,8 @@ export class User {
   @Column({ length: 20 })
   cedula?: string;
 
-  @Column({ length: 150 })
+  // Opcional: los clientes que da de alta el personal (registro asistido) pueden no tenerlo.
+  @Column({ type: 'varchar', length: 150, nullable: true })
   email?: string;
 
   // select: false -> nunca sale en un find() normal. Se estaba filtrando el

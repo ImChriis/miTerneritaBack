@@ -10,6 +10,7 @@ import {
   DataSource,
   EntityManager,
   In,
+  IsNull,
   MoreThan,
   Not,
   Repository,
@@ -45,6 +46,10 @@ import {
 } from '../common/uploads/comprobante-upload';
 import { existsSync } from 'fs';
 import { createHash } from 'crypto';
+import { Code } from '../code/entities/code.entity';
+import { Asiento } from '../salon/entities/asiento.entity';
+import { generateQrPng } from '../mail/qr';
+import { firmarEntrada } from './entrada-publica';
 import { Workbook } from 'exceljs';
 import { conciliar, leerEstadoDeCuenta } from './conciliacion';
 import { extname } from 'path';
@@ -53,6 +58,7 @@ import { extname } from 'path';
 // nombre de cada entrada y de cada producto consumido.
 const PAYMENT_RELATIONS = [
   'idUser',
+  'registradoPor',
   'idEvents',
   'consumeDetails',
   'consumeDetails.idFood',
@@ -143,6 +149,13 @@ export class PaymentsService {
           throw new NotFoundException('Evento no encontrado');
         }
         assertVentaAbierta(event, requester.role === 'admin');
+
+        // Registro asistido: el admin apartó los puestos a su nombre (el cliente
+        // puede no existir aún). Con el evento ya bloqueado se sueltan para
+        // vendérselos al cliente: nadie puede colarse entre medias.
+        if (requester.role === 'admin' && idUser !== requester.userId) {
+          await this.soltarApartado(manager, event.idEvents, requester.userId);
+        }
 
         // Una referencia no se repite en el mismo banco (si en bancos distintos).
         // Los pagos rechazados o borrados no cuentan: el cliente puede reenviarla.
@@ -302,6 +315,8 @@ export class PaymentsService {
             comprobanteHash,
             idUser: user,
             idEvents: event,
+            registradoPor:
+              requester.role === 'admin' ? { id: requester.userId } : null,
             // `date` la rellena MySQL con su DEFAULT current_timestamp().
             status: PaymentStatus.Pendiente,
             isDeleted: false,
@@ -510,6 +525,24 @@ export class PaymentsService {
     });
   }
 
+  /** Suelta el cupo y los puestos apartados por un usuario en un evento. */
+  async soltarReserva(idEvents: number, idUser: number): Promise<void> {
+    await this.dataSource.transaction((manager) =>
+      this.soltarApartado(manager, idEvents, idUser),
+    );
+  }
+
+  private async soltarApartado(
+    manager: EntityManager,
+    idEvents: number,
+    idUser: number,
+  ): Promise<void> {
+    await manager.getRepository(Reserva).delete({ idEvents, idUser });
+    await manager
+      .getRepository(Asiento)
+      .delete({ idEvents, idUser, idPayment: IsNull() });
+  }
+
   /** Personas con un apartado vigente, por evento: { [idEvents]: n }. */
   async comprando(): Promise<Record<number, number>> {
     const filas = await this.dataSource
@@ -708,6 +741,8 @@ export class PaymentsService {
       // Se responde 404 y no 403 para no confirmar que el pago existe.
       throw new NotFoundException('Pago no encontrado');
     }
+    // El cliente no necesita ver los datos del personal que registró su pago.
+    if (requesterRole !== 'admin') payment.registradoPor = null;
 
     return payment;
   }
@@ -994,6 +1029,71 @@ export class PaymentsService {
     }
 
     return Buffer.from(await libro.xlsx.writeBuffer());
+  }
+
+  /** Enlace público de la entrada (solo de pagos aprobados), para compartirla. */
+  async enlaceEntrada(id: number): Promise<{ firma: string }> {
+    const pago = await this.findOne(id);
+    if (pago.status !== PaymentStatus.Aprobado) {
+      throw new ConflictException('El pago aún no está aprobado');
+    }
+    return { firma: firmarEntrada(id) };
+  }
+
+  /**
+   * Lo que muestra /entrada/<firma>: el QR y los datos justos para entrar. Sin
+   * cédula, correo ni teléfono del cliente: el enlace puede reenviarse.
+   */
+  async entradaPublica(id: number) {
+    const pago = await this.paymentsRepository.findOne({
+      where: {
+        idPayment: id,
+        isDeleted: false,
+        status: PaymentStatus.Aprobado,
+      },
+      relations: [
+        'idUser',
+        'idEvents',
+        'paymentDetails',
+        'paymentDetails.ticket',
+      ],
+    });
+    if (!pago) throw new NotFoundException('Entrada no encontrada');
+    const code = await this.dataSource
+      .getRepository(Code)
+      .findOne({ where: { payment: { idPayment: id } } });
+    if (!code) throw new NotFoundException('Entrada no encontrada');
+    const asientos = await this.dataSource
+      .getRepository(Asiento)
+      .find({ where: { idPayment: id }, select: { asiento: true } });
+    const entradas = new Map<string, number>();
+    for (const d of pago.paymentDetails ?? []) {
+      if (d.isDeleted) continue;
+      const nombre = d.ticket?.name ?? 'Entrada';
+      entradas.set(nombre, (entradas.get(nombre) ?? 0) + (d.ticketNum ?? 1));
+    }
+    const png = await generateQrPng(code.QR);
+    return {
+      noDocumento: pago.noDocumento,
+      cliente: [pago.idUser?.name, pago.idUser?.lastName?.charAt(0)]
+        .filter(Boolean)
+        .join(' ')
+        .concat(pago.idUser?.lastName ? '.' : ''),
+      evento: {
+        nombre: pago.idEvents?.name,
+        fecha: pago.idEvents?.date,
+        hora: pago.idEvents?.time,
+        salon: pago.idEvents?.room ?? null,
+      },
+      entradas: [...entradas].map(([nombre, cantidad]) => ({
+        nombre,
+        cantidad,
+      })),
+      asientos: asientos
+        .map((a) => a.asiento)
+        .sort((a, b) => a.localeCompare(b, 'es', { numeric: true })),
+      qr: `data:image/png;base64,${png.toString('base64')}`,
+    };
   }
 
   /**
