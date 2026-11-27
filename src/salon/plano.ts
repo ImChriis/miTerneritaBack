@@ -1,5 +1,5 @@
 /**
- * Plano del salon Mi Ternerita (PDF "CAPACIDAD TERNERA"): 47 mesas, 304
+ * Plano del salon Mi Ternerita (PDF "CAPACIDAD TERNERA", con la fila 48-51 añadida y sin las 45-46): 49 mesas, 332
  * puestos. Unica fuente del plano: el front lo pide a GET /salon/plano.
  *
  * Coordenadas en las unidades del PDF (origen arriba a la izquierda). Cada
@@ -29,7 +29,7 @@ export interface Plano {
 }
 
 export const PLANO: Plano = {
-  viewBox: '72 36 960 560',
+  viewBox: '72 36 960 638',
   escenario: { x: 311, y: 45, w: 360, h: 45 },
   barra: { x: 928, y: 152, w: 86, h: 139 },
   asiento: { w: 22, h: 13 },
@@ -815,32 +815,6 @@ export const PLANO: Plano = {
       ],
     },
     {
-      mesa: 45,
-      x: 729,
-      y: 56,
-      w: 78,
-      h: 19,
-      nx: 768,
-      ny: 65,
-      asientos: [
-        ['A', 743, 65],
-        ['B', 793, 65],
-      ],
-    },
-    {
-      mesa: 46,
-      x: 832,
-      y: 56,
-      w: 79,
-      h: 19,
-      nx: 871,
-      ny: 65,
-      asientos: [
-        ['A', 846, 65],
-        ['B', 897, 65],
-      ],
-    },
-    {
       mesa: 47,
       x: 969,
       y: 302,
@@ -853,6 +827,82 @@ export const PLANO: Plano = {
         ['B', 1009, 342],
         ['C', 983, 311],
         ['D', 1009, 311],
+      ],
+    },
+    {
+      mesa: 48,
+      x: 315,
+      y: 596,
+      w: 80,
+      h: 65,
+      nx: 355,
+      ny: 628,
+      asientos: [
+        ['A', 330, 605],
+        ['B', 330, 621],
+        ['C', 329, 636],
+        ['D', 330, 651],
+        ['E', 381, 605],
+        ['F', 381, 621],
+        ['G', 381, 636],
+        ['H', 381, 651],
+      ],
+    },
+    {
+      mesa: 49,
+      x: 418,
+      y: 596,
+      w: 80,
+      h: 65,
+      nx: 458,
+      ny: 628,
+      asientos: [
+        ['A', 433, 605],
+        ['B', 433, 621],
+        ['C', 432, 636],
+        ['D', 433, 651],
+        ['E', 484, 605],
+        ['F', 484, 621],
+        ['G', 484, 636],
+        ['H', 484, 651],
+      ],
+    },
+    {
+      mesa: 50,
+      x: 522,
+      y: 596,
+      w: 80,
+      h: 65,
+      nx: 561,
+      ny: 628,
+      asientos: [
+        ['A', 536, 605],
+        ['B', 536, 621],
+        ['C', 536, 636],
+        ['D', 536, 651],
+        ['E', 587, 605],
+        ['F', 587, 621],
+        ['G', 588, 636],
+        ['H', 588, 651],
+      ],
+    },
+    {
+      mesa: 51,
+      x: 625,
+      y: 596,
+      w: 80,
+      h: 65,
+      nx: 665,
+      ny: 628,
+      asientos: [
+        ['A', 639, 605],
+        ['B', 640, 621],
+        ['C', 639, 636],
+        ['D', 639, 651],
+        ['E', 690, 605],
+        ['F', 691, 621],
+        ['G', 691, 636],
+        ['H', 691, 651],
       ],
     },
   ],
